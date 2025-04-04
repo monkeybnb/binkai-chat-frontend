@@ -7,7 +7,14 @@ import {
   WalletList,
 } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
-import { binanceWallet, injectedWallet } from "@rainbow-me/rainbowkit/wallets";
+import {
+  binanceWallet,
+  injectedWallet,
+  metaMaskWallet,
+  phantomWallet,
+  safeWallet,
+  trustWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
@@ -39,7 +46,14 @@ export default function QueryClientProviderWrapper({
   const recommendedWalletList: WalletList = [
     {
       groupName: "Recommended",
-      wallets: [binanceWallet, injectedWallet],
+      wallets: [
+        metaMaskWallet,
+        binanceWallet,
+        trustWallet,
+        safeWallet,
+        injectedWallet,
+        phantomWallet,
+      ],
     },
   ];
 

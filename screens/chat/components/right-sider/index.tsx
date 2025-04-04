@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import Image from "next/image";
 import { useState } from "react";
+import { useDisconnect } from "wagmi";
 
 interface Network {
   name: string;
@@ -70,6 +71,7 @@ const RightSidebar = ({
 }) => {
   const [open, setOpen] = useState(false);
   const { logout } = useAuthStore();
+  const { disconnect } = useDisconnect();
   return (
     <div
       className={cn(
@@ -129,6 +131,7 @@ const RightSidebar = ({
         description="Would you like to disconnect all networks?"
         onConfirm={() => {
           logout();
+          disconnect();
           setOpen(false);
         }}
         onCancel={() => setOpen(false)}

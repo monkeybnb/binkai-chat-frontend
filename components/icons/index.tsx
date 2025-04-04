@@ -4,6 +4,7 @@ export { default as Delete } from "./delete.svg";
 export { default as Edit } from "./edit.svg";
 export { default as Exit } from "./exit.svg";
 export { default as GithubFilled } from "./github-fill.svg";
+export { default as GridBackground } from "./grid-background.svg";
 export { default as LogoText } from "./logo-text.svg";
 export { default as Logo } from "./logo.svg";
 export { default as Menu } from "./menu.svg";
