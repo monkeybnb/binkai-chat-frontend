@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+
+Always answer is eng
+New providers are always created in providers folder
+New screen auto gen in folder screens and Create file in app using this component 

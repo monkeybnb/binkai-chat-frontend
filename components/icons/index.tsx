@@ -1,0 +1,15 @@
+export { default as AlignArrowLeft } from "./align-arrow-left.svg";
+export { default as ArrowUp } from "./arrow-up.svg";
+export { default as Delete } from "./delete.svg";
+export { default as Edit } from "./edit.svg";
+export { default as Exit } from "./exit.svg";
+export { default as GithubFilled } from "./github-fill.svg";
+export { default as LogoText } from "./logo-text.svg";
+export { default as Logo } from "./logo.svg";
+export { default as Menu } from "./menu.svg";
+export { default as Message } from "./message.svg";
+export { default as Pencil } from "./pencil.svg";
+export { default as Search } from "./search.svg";
+export { default as SocialXFill } from "./social-x-fill.svg";
+export { default as StopFill } from "./stop-fill.svg";
+export { default as TelegramFilled } from "./telegram-fill.svg";
