@@ -1,7 +1,7 @@
 import { socketService } from "@/services/socket";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAccount, useSignMessage } from "wagmi";
+import { useCallback, useRef, useState } from "react";
+import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
 
 export const useSocket = () => {
   const searchParams = useSearchParams();
@@ -11,13 +11,13 @@ export const useSocket = () => {
 
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
+  const { sendTransaction } = useSendTransaction();
 
   const connect = useCallback(async () => {
     if (!threadId || !address || !signMessageAsync || isConnecting) return;
 
     try {
       setIsConnecting(true);
-
       // If thread has changed, ensure cleanup
       if (previousThreadId.current && previousThreadId.current !== threadId) {
         console.log(
@@ -26,7 +26,11 @@ export const useSocket = () => {
         await socketService.disconnect();
       }
 
-      await socketService.connect(threadId, { address, signMessageAsync });
+      await socketService.connect(threadId, {
+        address,
+        signMessageAsync,
+        sendTransaction,
+      });
       previousThreadId.current = threadId;
     } catch (error) {
       console.error("Socket connection error:", error);
@@ -35,41 +39,36 @@ export const useSocket = () => {
     }
   }, [threadId, address, signMessageAsync, isConnecting]);
 
-  // Initial connection
-  useEffect(() => {
-    connect();
-    return () => {
-      socketService.disconnect();
-      previousThreadId.current = null;
-    };
-  }, [connect]);
+  const disconnect = useCallback(() => {
+    socketService.disconnect();
+    previousThreadId.current = null;
+  }, []);
 
-  // Reconnect on visibility change
-  useEffect(() => {
-    if (typeof document === "undefined") return;
+  // useEffect(() => {
+  //   if (typeof document === "undefined") return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        connect();
-      }
-    };
+  //   const handleVisibilityChange = () => {
+  //     if (document.visibilityState === "visible") {
+  //       connect();
+  //     }
+  //   };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", connect);
-    window.addEventListener("online", connect);
+  //   document.addEventListener("visibilitychange", handleVisibilityChange);
+  //   window.addEventListener("focus", connect);
+  //   window.addEventListener("online", connect);
 
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", connect);
-      window.removeEventListener("online", connect);
-    };
-  }, [connect]);
+  //   return () => {
+  //     document.removeEventListener("visibilitychange", handleVisibilityChange);
+  //     window.removeEventListener("focus", connect);
+  //     window.removeEventListener("online", connect);
+  //   };
+  // }, [connect]);
 
   return {
     isConnected: socketService.isConnected(),
     isConnecting,
     sendMessage: socketService.sendMessage.bind(socketService),
-    disconnect: socketService.disconnect.bind(socketService),
+    disconnect,
     connect,
     currentThreadId: threadId,
     isReady: Boolean(address && signMessageAsync),

@@ -1,8 +1,8 @@
 import {
   createThread,
-  getStreamMessage,
   getThread,
   getThreadMessages,
+  sendChat,
 } from "@/services";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -302,14 +302,19 @@ export const useChatStore = create<ChatState>()(
 
           get().addMessage(tempMessage);
 
-          const response: any = await getStreamMessage({
-            thread_id: currentThreadId as string,
-            question: message,
+          const response: any = await sendChat({
+            threadId: currentThreadId as string,
+            message,
           });
+
+          // const response: any = await getStreamMessage({
+          //   thread_id: currentThreadId as string,
+          //   question: message,
+          // });
 
           console.log(response, "response");
 
-          if (response?.error || response?.includes("error")) {
+          if (response?.error) {
             get().updateMessage(tempMsgUid, {
               isLoading: false,
               error:
@@ -318,23 +323,24 @@ export const useChatStore = create<ChatState>()(
             return currentThreadId;
           }
 
-          const reader = response.data.getReader();
-          const decoder = new TextDecoder();
-          let content = "";
+          // const reader = response.data.getReader();
+          // const decoder = new TextDecoder();
+          // let content = "";
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          // while (true) {
+          //   const { done, value } = await reader.read();
+          //   if (done) break;
 
-            const chunk = decoder.decode(value);
-            content += chunk;
-          }
+          //   const chunk = decoder.decode(value);
+          //   content += chunk;
+          // }
 
           get().updateMessage(tempMsgUid, {
-            content,
+            content: response.response,
             role: "assistant",
             createdAt: new Date().toISOString(),
             threadId: currentThreadId as string,
+            isLoading: false,
           });
 
           return currentThreadId;
@@ -394,8 +400,6 @@ export const useThreadMessages = (threadId: string) => {
   const thread = threads.find((t) => t.id === threadId);
 
   useEffect(() => {
-    console.log(threadId, isAuthenticated);
-
     if (threadId && isAuthenticated) {
       fetchThreadMessages({ threadId, page: 1 });
     }

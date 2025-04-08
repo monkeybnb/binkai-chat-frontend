@@ -10,7 +10,7 @@ const Chat = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpenRightSider, setIsOpenRightSider] = useState(false);
 
-  const { isConnected } = useSocket();
+  const { disconnect, connect } = useSocket();
   useEffect(() => {
     const sidebarState = localStorage.getItem("sidebarState");
     if (sidebarState) {
@@ -23,8 +23,11 @@ const Chat = () => {
   }, [isSidebarOpen]);
 
   useEffect(() => {
-    console.log(isConnected, "isConnected");
-  }, [isConnected]);
+    connect();
+    return () => {
+      disconnect();
+    };
+  }, [connect, disconnect]);
 
   return (
     <div className="flex w-screen overflow-hidden h-screen">

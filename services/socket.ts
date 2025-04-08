@@ -1,4 +1,5 @@
 import { Socket, io } from "socket.io-client";
+import { parseEther } from "viem";
 
 interface MessageData {
   thread_id: string;
@@ -16,8 +17,10 @@ interface SignMessageData {
 }
 
 interface SignTransactionData {
-  transaction: string;
-  network: string;
+  transaction: {
+    to: `0x${string}`;
+    value: string;
+  };
 }
 
 interface WalletResponse {
@@ -30,6 +33,7 @@ interface WalletResponse {
 interface WagmiConfig {
   address: string;
   signMessageAsync: (args: { message: string }) => Promise<string>;
+  sendTransaction: any;
 }
 
 class SocketService {
@@ -81,10 +85,11 @@ class SocketService {
     wagmiConfig: WagmiConfig
   ): Promise<void> {
     console.log(`Connecting to socket with thread ID: ${threadId}`);
-    this.wagmiConfig = wagmiConfig;
+    console.log("wagmiConfig", wagmiConfig);
 
     // Wait for cleanup to complete before creating new socket
     await this.cleanupSocket();
+    this.wagmiConfig = wagmiConfig;
 
     this.socket = io(`${this.SOCKET_URL}/${this.NAMESPACE}`, {
       query: {
@@ -146,6 +151,7 @@ class SocketService {
         callback: (response: WalletResponse) => void
       ) => {
         try {
+          console.log("get_address request:", this.wagmiConfig);
           if (!this.wagmiConfig) {
             throw new Error("Wallet not connected");
           }
@@ -191,9 +197,18 @@ class SocketService {
         callback: (response: WalletResponse) => void
       ) => {
         try {
+          if (!this.wagmiConfig) {
+            throw new Error("Wallet not connected");
+          }
           console.log("sign_transaction request:", data);
-          // Implement your transaction signing logic here based on network
-          let signedTransaction = ""; // Implementation depends on network type
+
+          const signedTransaction = await this.wagmiConfig.sendTransaction({
+            to: data.transaction.to,
+            value: parseEther(data.transaction.value),
+          });
+
+          console.log("signedTransaction", signedTransaction);
+
           callback({ signedTransaction });
         } catch (error) {
           console.error("Error signing transaction:", error);

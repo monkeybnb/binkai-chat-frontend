@@ -38,3 +38,10 @@ export const getStreamMessage = async (params: {
     responseType: "stream",
   });
 };
+
+export const sendChat = async (params: {
+  threadId: string;
+  message: string;
+}) => {
+  return api.post("/chat", params);
+};
