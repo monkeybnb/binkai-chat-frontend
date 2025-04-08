@@ -6,9 +6,12 @@ import {
 } from "@/services";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useAuthStore } from "./auth-store";
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface Message {
   id: string;
@@ -215,10 +218,10 @@ export const useChatStore = create<ChatState>()(
         set((state) => ({
           threads: state.threads.map((thread) => ({
             ...thread,
-            messages: thread.messages.map((message) =>
+            messages: thread.messages?.map((message) =>
               message.id === messageId ? { ...message, ...updates } : message
             ),
-            updated_at: thread.messages.some((m) => m.id === messageId)
+            updated_at: thread.messages?.some((m) => m.id === messageId)
               ? new Date().toISOString()
               : thread.updated_at,
           })),
@@ -252,6 +255,7 @@ export const useChatStore = create<ChatState>()(
 
       sendMessage: async ({ message, threadId, setStatus, setMessage }) => {
         if (!message.trim()) return null;
+        const tempMsgUid = uuidv4();
 
         let currentThreadId = threadId;
         try {
@@ -285,18 +289,29 @@ export const useChatStore = create<ChatState>()(
           get().addMessage(userMessage);
           setMessage("");
 
+          console.log(tempMsgUid, "tempMsgUid");
+
+          const tempMessage: Message = {
+            id: tempMsgUid,
+            content: "",
+            role: "assistant",
+            createdAt: new Date().toISOString(),
+            threadId: currentThreadId as string,
+            isLoading: true,
+          };
+
+          get().addMessage(tempMessage);
+
           const response: any = await getStreamMessage({
             thread_id: currentThreadId as string,
             question: message,
           });
 
-          if (response.includes("error")) {
-            get().addMessage({
-              id: (Date.now() + 1).toString(),
-              content: "",
-              role: "assistant",
-              createdAt: new Date().toISOString(),
-              threadId: currentThreadId as string,
+          console.log(response, "response");
+
+          if (response?.error || response?.includes("error")) {
+            get().updateMessage(tempMsgUid, {
+              isLoading: false,
               error:
                 "An error occurred while generating the response. Please try again.",
             });
@@ -315,8 +330,7 @@ export const useChatStore = create<ChatState>()(
             content += chunk;
           }
 
-          get().addMessage({
-            id: (Date.now() + 1).toString(),
+          get().updateMessage(tempMsgUid, {
             content,
             role: "assistant",
             createdAt: new Date().toISOString(),
@@ -327,12 +341,8 @@ export const useChatStore = create<ChatState>()(
         } catch (error) {
           console.error("Error sending message:", error);
           if (currentThreadId) {
-            get().addMessage({
-              id: (Date.now() + 1).toString(),
-              content: "",
-              role: "assistant",
-              createdAt: new Date().toISOString(),
-              threadId: currentThreadId as string,
+            get().updateMessage(tempMsgUid, {
+              isLoading: false,
               error: "Failed to send message. Please try again.",
             });
           }

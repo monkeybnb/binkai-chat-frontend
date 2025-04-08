@@ -83,10 +83,16 @@ const config: Config = {
             height: "0",
           },
         },
+        scale: {
+          "0%": { transform: "scale(0.7)" },
+          "50%": { transform: "scale(1.0)" },
+          "100%": { transform: "scale(0.85)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        scale: "scale 0.3s ease-in-out infinite",
       },
       fontSize: {
         "heading-1": [

@@ -1,5 +1,6 @@
 export { default as AlignArrowLeft } from "./align-arrow-left.svg";
 export { default as ArrowUp } from "./arrow-up.svg";
+export { default as CircleFill } from "./circle-fill.svg";
 export { default as Delete } from "./delete.svg";
 export { default as Edit } from "./edit.svg";
 export { default as Exit } from "./exit.svg";

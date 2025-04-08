@@ -1,8 +1,10 @@
 "use client";
 
+import { CircleFill } from "@/components/icons";
 import { Message as MessageType } from "@/stores";
 import dompurify from "dompurify";
 import { MessageMarkdown } from "./markdown/messageMarkdown";
+
 interface MessageProps {
   msg: MessageType;
   index: number;
@@ -10,7 +12,14 @@ interface MessageProps {
 
 export const Message = ({ msg }: MessageProps) => {
   const isUser = msg.role === "user";
-  console.log(msg);
+
+  if (msg.isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <CircleFill className="animate-scale transition-all duration-300" />
+      </div>
+    );
+
   if (isUser) {
     return (
       <div className="flex flex-col gap-2 relative pb-9">

@@ -36,6 +36,5 @@ export const getStreamMessage = async (params: {
       accept: "*/*",
     },
     responseType: "stream",
-    // adapter: "fetch",
   });
 };

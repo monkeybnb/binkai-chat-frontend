@@ -69,6 +69,7 @@ export default function QueryClientProviderWrapper({
   const connectors = connectorsForWallets(recommendedWalletList, {
     projectId: WALLET_CONNECT_PROJECT_ID,
     appName: APP_NAME,
+    appUrl: window?.location?.origin,
   });
 
   const config = createConfig({
@@ -77,6 +78,10 @@ export default function QueryClientProviderWrapper({
     chains: [bsc],
     transports: {
       [bsc.id]: http(),
+      // [base.id]: http(),
+      // [polygon.id]: http(),
+      // [tron.id]: http(),
+      // [mainnet.id]: http(),
     },
   });
 

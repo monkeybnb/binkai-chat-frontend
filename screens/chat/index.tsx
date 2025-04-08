@@ -1,4 +1,5 @@
 "use client";
+import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useState } from "react";
 import ChatContainer from "./components/ChatContainer";
 import { ChatHeader } from "./components/chat-header";
@@ -8,6 +9,8 @@ import RightSidebar from "./components/right-sider";
 const Chat = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpenRightSider, setIsOpenRightSider] = useState(false);
+
+  const { isConnected } = useSocket();
   useEffect(() => {
     const sidebarState = localStorage.getItem("sidebarState");
     if (sidebarState) {
@@ -18,6 +21,10 @@ const Chat = () => {
   useEffect(() => {
     localStorage.setItem("sidebarState", JSON.stringify(isSidebarOpen));
   }, [isSidebarOpen]);
+
+  useEffect(() => {
+    console.log(isConnected, "isConnected");
+  }, [isConnected]);
 
   return (
     <div className="flex w-screen overflow-hidden h-screen">
