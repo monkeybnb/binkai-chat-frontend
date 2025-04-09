@@ -85,6 +85,8 @@ const ChatContainer = () => {
       setStatus("IDLE");
     }
 
+    console.log(isConnected, threadId, "isConnected");
+
     if (!isConnected && threadId) {
       connect();
     }

@@ -34,7 +34,7 @@ export const useSocket = () => {
 
   const connect = useCallback(async () => {
     if (!threadId || !address) return;
-
+    console.log(address, "connect-useSocket");
     try {
       setIsConnecting(true);
 
