@@ -1,9 +1,9 @@
 "use client";
 
 import { CircleFill } from "@/components/icons";
+import { MessageMarkdown } from "@/components/MessageMarkdown";
 import { Message as MessageType } from "@/stores";
 import dompurify from "dompurify";
-import { MessageMarkdown } from "./markdown/messageMarkdown";
 
 interface MessageProps {
   msg: MessageType;

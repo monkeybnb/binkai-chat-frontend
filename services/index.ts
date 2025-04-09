@@ -25,11 +25,14 @@ export const getThreadMessages = async (params: {
 export const createThread = async (params: { title: string }) =>
   api.post("/thread", params);
 
+export const deleteThread = async (threadId: string) =>
+  api.delete(`/thread/${threadId}`);
+
 export const getStreamMessage = async (params: {
   thread_id: string;
   question: string;
 }) => {
-  return api.get(`/thread/stream-message`, {
+  return api.get(`/chat/stream`, {
     data: params,
     headers: {
       "Content-Type": "application/json",

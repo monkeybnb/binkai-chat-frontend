@@ -1,11 +1,13 @@
 import {
   createThread,
+  deleteThread,
   getThread,
   getThreadMessages,
   sendChat,
 } from "@/services";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { useAuthStore } from "./auth-store";
@@ -205,12 +207,23 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       ),
     })),
 
-  deleteThread: (threadId) =>
-    set((state) => ({
-      threads: state.threads.filter((thread) => thread.id !== threadId),
-      currentThreadId:
-        state.currentThreadId === threadId ? null : state.currentThreadId,
-    })),
+  deleteThread: async (threadId: string) => {
+    try {
+      const { error }: any = await deleteThread(threadId);
+      if (error) {
+        throw new Error(error);
+      }
+      set((state) => ({
+        threads: state.threads.filter((thread) => thread.id !== threadId),
+        currentThreadId:
+          state.currentThreadId === threadId ? null : state.currentThreadId,
+      }));
+      toast.success("Thread deleted successfully");
+    } catch (error) {
+      console.error("Error deleting thread:", error);
+      throw error;
+    }
+  },
 
   addMessage: (message) =>
     set((state) => ({

@@ -3,6 +3,7 @@
 import { ArrowUp, Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useScroll } from "@/hooks/useScroll";
+import { useSocket } from "@/hooks/useSocket";
 import { cn } from "@/lib/utils";
 import {
   Message as MessageType,
@@ -14,19 +15,23 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
-
 type Status = "IDLE" | "GENERATING";
 
 const HomeContent = () => {
   const [message, setMessage] = useState("");
   const { createThread, setPendingMessage } = useChatStore();
   const { navigateToThread } = useThreadRouter();
-
+  const { connect, isConnected } = useSocket();
   const handleSendMessage = async () => {
     try {
       const threadId = await createThread(message);
-      setPendingMessage({ message, threadId });
       navigateToThread(threadId);
+
+      setPendingMessage({ message, threadId });
+
+      if (!isConnected) {
+        connect();
+      }
     } catch (error) {
       console.error("Error in message flow:", error);
     }
@@ -54,6 +59,8 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
   const threadId = searchParams.get("threadId") as string;
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("IDLE");
+  const { createThread } = useChatStore();
+  const { navigateToThread } = useThreadRouter();
 
   const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
     useThreadMessages(threadId);
@@ -63,9 +70,7 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
   const { messagesStartRef, messagesEndRef, handleScroll, hideScroll } =
     useScroll({ status });
 
-  const { sendMessage, createThread, setPendingMessage, pendingMessage } =
-    useChatStore();
-  const { navigateToThread } = useThreadRouter();
+  const { sendMessage, setPendingMessage, pendingMessage } = useChatStore();
 
   useEffect(() => {
     console.log(pendingMessage, "pendingMessage", isConnected);
@@ -102,6 +107,13 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
     const currentMessage = message;
     setMessage("");
     try {
+      if (!threadId) {
+        const threadId = await createThread(currentMessage);
+        navigateToThread(threadId);
+
+        setPendingMessage({ message: currentMessage, threadId });
+      }
+
       sendMessage({ message: currentMessage, threadId: threadId });
     } catch (error) {
       console.error("Error sending message:", error);
@@ -111,7 +123,7 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 w-full max-w-[720px] mx-auto">
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex gap-4 animate-pulse">
             <div className="w-10 h-10 bg-muted rounded-full" />

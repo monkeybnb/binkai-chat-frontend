@@ -1,11 +1,18 @@
 "use client";
 
+import { Delete } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Thread, useThreads } from "@/stores";
+import { Thread, useChatStore, useThreads } from "@/stores";
 import { MoreVertical } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const ChannelListSkeleton = () => (
   <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-4">
@@ -19,11 +26,26 @@ const ChannelItem = ({ thread }: { thread: Thread }) => {
   const searchParams = useSearchParams();
   const selectedThreadId = searchParams.get("threadId");
   const router = useRouter();
+  const { deleteThread } = useChatStore();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setIsDeleting(true);
+      await deleteThread(thread.id);
+    } catch (error) {
+      console.error("Error deleting thread:", error);
+    } finally {
+      setIsDeleting(false);
+      router.push("/");
+    }
+  };
 
   return (
     <div
       className={cn(
-        "hover:bg-muted rounded-lg cursor-pointer px-3 py-2 flex items-center justify-between group h-10",
+        "hover:bg-muted relative rounded-lg cursor-pointer px-3 py-2 flex items-center justify-between group h-10 overflow-hidden",
         thread.id === selectedThreadId && "bg-muted"
       )}
       onClick={() => {
@@ -34,13 +56,31 @@ const ChannelItem = ({ thread }: { thread: Thread }) => {
       }}
     >
       <div className="truncate text-body-small flex-1">{thread.title}</div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="w-7 h-7 hidden group-hover:block"
-      >
-        <MoreVertical className="w-4 h-4" />
-      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-7 h-7 hidden group-hover:flex"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-[148px] rounded-xl"
+          side="right"
+        >
+          <DropdownMenuItem
+            className="flex items-center gap-2"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            <Delete /> {isDeleting ? "Deleting..." : "Delete"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
@@ -140,7 +180,6 @@ export const ChannelList = () => {
   }
 
   const groupedThreads = groupByTimeframe(threads);
-  console.log(groupedThreads, "groupedThreads", threads);
 
   return (
     <div className="flex-1 overflow-y-auto p-4">

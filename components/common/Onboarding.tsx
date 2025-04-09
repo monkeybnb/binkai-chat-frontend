@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId, useChains, useDisconnect } from "wagmi";
 import SocialLink from "./SocialLink";
 
-const WALLETS = ["binance", "phantom", "trust", "safepal"];
+const WALLETS = ["binance", "metamask", "trust", "safepal"];
 
 interface CustomWalletButtonProps {
   ready: boolean;
