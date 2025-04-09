@@ -40,7 +40,6 @@ export const useAuthStore = create<AuthState>()(
 
       login: async ({ address, signMessageAsync }) => {
         const accessToken = localStorage.getItem("access_token");
-        console.log(accessToken);
 
         if (accessToken) {
           await get().fetchProfile();
@@ -76,7 +75,6 @@ export const useAuthStore = create<AuthState>()(
           console.log("Login success!", newAccessToken);
 
           if (newAccessToken) {
-            console.log("Fetching profile ...");
             localStorage.setItem("access_token", newAccessToken);
             await get().fetchProfile();
             set({ isAuthenticated: true });

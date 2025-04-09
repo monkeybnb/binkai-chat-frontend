@@ -86,7 +86,6 @@ class SocketService {
     wagmiConfig: WagmiConfig
   ): Promise<void> {
     console.log(`Connecting to socket with thread ID: ${threadId}`);
-    console.log("wagmiConfig", wagmiConfig);
 
     // Wait for cleanup to complete before creating new socket
     await this.cleanupSocket();

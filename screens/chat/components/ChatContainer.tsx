@@ -55,14 +55,14 @@ const HomeContent = () => {
   );
 };
 
-const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
+const ChatContainer = () => {
   const searchParams = useSearchParams();
   const threadId = searchParams.get("threadId") as string;
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("IDLE");
-
   const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
     useThreadMessages(threadId);
+  const { disconnect, connect, isConnected } = useSocket();
 
   const ref = useRef<HTMLDivElement>(null);
   const { ref: loadingRef, inView } = useInView({
@@ -84,7 +84,11 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
       setMessage("");
       setStatus("IDLE");
     }
-  }, [isConnected, pendingMessage, sendMessage, setPendingMessage]);
+
+    if (!isConnected && threadId) {
+      connect();
+    }
+  }, [isConnected, pendingMessage, sendMessage, setPendingMessage, threadId]);
 
   useEffect(() => {
     if (inView && hasMore && !isLoading && !isLoadingMore) {

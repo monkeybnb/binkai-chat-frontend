@@ -95,7 +95,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   fetchThreads: async (page = 1) => {
     try {
       const response = await getThread({ page, take: 20 });
-      console.log(response, "response");
       if (page === 1) {
         set({
           threads: response.data,
@@ -335,8 +334,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   createThread: async (message: string) => {
     try {
-      console.log(message, "message");
-
       const newThread: any = await createThread({
         title: message
           ? message.slice(0, 50) + (message.length > 50 ? "..." : "")
@@ -378,7 +375,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         thread_id: currentThreadId as string,
       };
       get().addMessage(userMessage);
-      console.log(get().threads, "threads1");
 
       const tempMessage: Message = {
         id: tempMsgUid,

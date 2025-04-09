@@ -1,16 +1,17 @@
 "use client";
 import { useSocket } from "@/hooks/useSocket";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ChatContainer from "./components/ChatContainer";
 import { ChatHeader } from "./components/chat-header";
 import ChatSidebar from "./components/chat-sider";
 import RightSidebar from "./components/right-sider";
-
 const Chat = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpenRightSider, setIsOpenRightSider] = useState(false);
+  const searchParams = useSearchParams();
+  const threadId = searchParams.get("threadId");
 
-  const { disconnect, connect, isConnected } = useSocket();
   useEffect(() => {
     const sidebarState = localStorage.getItem("sidebarState");
     if (sidebarState) {
@@ -21,13 +22,6 @@ const Chat = () => {
   useEffect(() => {
     localStorage.setItem("sidebarState", JSON.stringify(isSidebarOpen));
   }, [isSidebarOpen]);
-
-  useEffect(() => {
-    connect();
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
 
   return (
     <div className="flex w-screen overflow-hidden h-screen">
@@ -42,7 +36,7 @@ const Chat = () => {
           setIsOpenRightSider={setIsOpenRightSider}
         />
         <main className="flex-1 flex flex-col overflow-hidden relative items-center pt-6">
-          <ChatContainer isConnected={isConnected} />
+          <ChatContainer />
         </main>
       </div>
       <RightSidebar
