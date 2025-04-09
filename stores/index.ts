@@ -139,29 +139,33 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         take: 20,
       });
 
+      const messages = response.data;
+      const hasMore = messages.length === 20;
+
       set((state) => {
         const thread = state.threads.find((t) => t.id === threadId);
-        const messages = response.data;
+        const existingMessages = thread?.messages || [];
+
+        // If it's page 1 or no existing messages, just use new messages
+        const updatedMessages =
+          page === 1 ? messages : [...existingMessages, ...messages];
 
         return {
           threads: state.threads.map((t) =>
             t.id === threadId
               ? {
                   ...t,
-                  messages:
-                    page === 1
-                      ? messages
-                      : [...messages, ...(thread?.messages || [])],
+                  messages: updatedMessages,
                 }
               : t
           ),
           messageHasMore: {
             ...state.messageHasMore,
-            [threadId]: messages.length === 20,
+            [threadId]: hasMore,
           },
           messageCurrentPage: {
             ...state.messageCurrentPage,
-            [threadId]: page,
+            [threadId]: hasMore ? page : state.messageCurrentPage[threadId],
           },
         };
       });
@@ -180,14 +184,67 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   fetchMoreMessages: async (threadId) => {
     const state = get();
-    if (!state.messageHasMore[threadId] || state.isLoading) return;
+    if (!state.messageHasMore[threadId] || state.isLoadingMore[threadId])
+      return;
 
     const currentPage = state.messageCurrentPage[threadId] || 1;
     const nextPage = currentPage + 1;
-    await state.fetchThreadMessages({
-      threadId,
-      page: nextPage,
-    });
+
+    try {
+      set((state) => ({
+        isLoadingMore: { ...state.isLoadingMore, [threadId]: true },
+      }));
+
+      const response = await getThreadMessages({
+        id: threadId,
+        page: nextPage,
+        take: 20,
+      });
+
+      const messages = response.data;
+      const hasMore = messages.length === 20;
+
+      if (messages.length === 0) {
+        set((state) => ({
+          messageHasMore: {
+            ...state.messageHasMore,
+            [threadId]: false,
+          },
+          isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+        }));
+        return;
+      }
+
+      set((state) => {
+        const thread = state.threads.find((t) => t.id === threadId);
+        const existingMessages = thread?.messages || [];
+
+        return {
+          threads: state.threads.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: [...existingMessages, ...messages],
+                }
+              : t
+          ),
+          messageHasMore: {
+            ...state.messageHasMore,
+            [threadId]: hasMore,
+          },
+          messageCurrentPage: {
+            ...state.messageCurrentPage,
+            [threadId]: nextPage,
+          },
+          isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching more messages:", error);
+      set((state) => ({
+        isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+      }));
+    }
   },
 
   setThreads: (threads) => set({ threads }),
@@ -426,14 +483,13 @@ export const useThreadMessages = (threadId: string) => {
     fetchThreadMessages,
     fetchMoreMessages,
   } = useChatStore();
-  const { isAuthenticated } = useAuthStore();
   const thread = threads.find((t) => t.id === threadId);
 
   useEffect(() => {
-    if (threadId && isAuthenticated) {
+    if (threadId) {
       fetchThreadMessages({ threadId, page: 1 });
     }
-  }, [threadId, isAuthenticated, fetchThreadMessages]);
+  }, [threadId, fetchThreadMessages]);
 
   return {
     messages: thread?.messages || [],

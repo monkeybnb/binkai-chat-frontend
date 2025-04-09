@@ -13,6 +13,7 @@ import {
 } from "@/stores";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
 type Status = "IDLE" | "GENERATING";
@@ -59,21 +60,24 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
   const threadId = searchParams.get("threadId") as string;
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("IDLE");
-  const { createThread } = useChatStore();
-  const { navigateToThread } = useThreadRouter();
 
   const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
     useThreadMessages(threadId);
 
   const ref = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef<HTMLDivElement>(null);
+  const { ref: loadingRef, inView } = useInView({
+    root: ref.current,
+    threshold: 0.1,
+    rootMargin: "100px",
+  });
   const { messagesStartRef, messagesEndRef, handleScroll, hideScroll } =
     useScroll({ status });
 
-  const { sendMessage, setPendingMessage, pendingMessage } = useChatStore();
+  const { sendMessage, createThread, setPendingMessage, pendingMessage } =
+    useChatStore();
+  const { navigateToThread } = useThreadRouter();
 
   useEffect(() => {
-    console.log(pendingMessage, "pendingMessage", isConnected);
     if (isConnected && pendingMessage) {
       sendMessage(pendingMessage);
       setPendingMessage(null);
@@ -83,25 +87,10 @@ const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
   }, [isConnected, pendingMessage, sendMessage, setPendingMessage]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const target = entries[0];
-        if (target.isIntersecting && hasMore && !isLoading) {
-          fetchMore();
-        }
-      },
-      {
-        root: ref.current,
-        threshold: 0.1,
-      }
-    );
-
-    if (loadingRef.current) {
-      observer.observe(loadingRef.current);
+    if (inView && hasMore && !isLoading && !isLoadingMore) {
+      fetchMore();
     }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoading, fetchMore]);
+  }, [inView, hasMore, isLoading, isLoadingMore, fetchMore]);
 
   const handleSendMessage = async () => {
     const currentMessage = message;

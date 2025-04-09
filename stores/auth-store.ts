@@ -3,6 +3,7 @@ import { getProfile } from "@/services";
 import axios from "axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useChatStore } from "./index";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -93,6 +94,19 @@ export const useAuthStore = create<AuthState>()(
           set({
             isAuthenticated: false,
             profile: undefined,
+          });
+          // Reset chat store state
+          useChatStore.setState({
+            messages: [],
+            threads: [],
+            currentThreadId: null,
+            isLoading: false,
+            isLoadingMore: {},
+            hasMore: true,
+            currentPage: 1,
+            messageHasMore: {},
+            messageCurrentPage: {},
+            pendingMessage: null,
           });
           localStorage.clear();
         } catch (error) {

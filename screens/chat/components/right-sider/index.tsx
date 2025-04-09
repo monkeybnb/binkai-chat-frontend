@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useChainId, useDisconnect, useSwitchChain } from "wagmi";
 import { Chain } from "wagmi/chains";
@@ -53,6 +54,7 @@ const RightSidebar = ({
   isOpenRightSider: boolean;
   setIsOpenRightSider: (isOpenRightSider: boolean) => void;
 }) => {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const { logout } = useAuthStore();
   const { disconnectAsync } = useDisconnect();
@@ -131,6 +133,7 @@ const RightSidebar = ({
         title="Disconnect All"
         description="Would you like to disconnect all networks?"
         onConfirm={async () => {
+          router.push("/");
           await disconnectAsync();
           logout();
           setOpen(false);
