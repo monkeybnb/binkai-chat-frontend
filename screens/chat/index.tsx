@@ -1,5 +1,4 @@
 "use client";
-import { useSocket } from "@/hooks/useSocket";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ChatContainer from "./components/ChatContainer";

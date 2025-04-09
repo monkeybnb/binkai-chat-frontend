@@ -14,15 +14,25 @@ import {
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
 type Status = "IDLE" | "GENERATING";
 
-const HomeContent = () => {
+const HomeContent = ({
+  connect,
+  isConnected,
+}: {
+  connect: any;
+  isConnected: boolean;
+}) => {
   const [message, setMessage] = useState("");
   const { createThread, setPendingMessage } = useChatStore();
   const { navigateToThread } = useThreadRouter();
-  const { connect, isConnected } = useSocket();
+  const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const { sendTransaction } = useSendTransaction();
+
   const handleSendMessage = async () => {
     try {
       const threadId = await createThread(message);
@@ -30,8 +40,13 @@ const HomeContent = () => {
 
       setPendingMessage({ message, threadId });
 
-      if (!isConnected) {
-        connect();
+      if (!isConnected && address && threadId) {
+        connect({
+          threadId,
+          address: address as string,
+          signMessageAsync,
+          sendTransaction,
+        });
       }
     } catch (error) {
       console.error("Error in message flow:", error);
@@ -62,6 +77,9 @@ const ChatContainer = () => {
   const [status, setStatus] = useState<Status>("IDLE");
   const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
     useThreadMessages(threadId);
+  const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const { sendTransaction } = useSendTransaction();
   const { disconnect, connect, isConnected } = useSocket();
 
   const ref = useRef<HTMLDivElement>(null);
@@ -78,25 +96,36 @@ const ChatContainer = () => {
   const { navigateToThread } = useThreadRouter();
 
   useEffect(() => {
+    console.log(address, threadId, "address, threadId");
+
+    if (!address || !threadId) {
+      return;
+    }
+
+    console.log(address, threadId, "address, threadId");
+
+    connect({
+      threadId,
+      address: address as string,
+      signMessageAsync,
+      sendTransaction,
+    });
+
+    // return () => {
+    //   if (isConnected) {
+    //     disconnect();
+    //   }
+    // };
+  }, [address, threadId, connect]);
+
+  useEffect(() => {
     if (isConnected && pendingMessage) {
       sendMessage(pendingMessage);
       setPendingMessage(null);
       setMessage("");
       setStatus("IDLE");
     }
-
-    console.log(isConnected, threadId, "isConnected");
-
-    if (threadId) {
-      connect();
-    }
-
-    return () => {
-      if (isConnected) {
-        disconnect();
-      }
-    };
-  }, [isConnected, pendingMessage, sendMessage, setPendingMessage, threadId]);
+  }, [isConnected, pendingMessage, sendMessage, setPendingMessage]);
 
   useEffect(() => {
     if (inView && hasMore && !isLoading && !isLoadingMore) {
@@ -139,7 +168,7 @@ const ChatContainer = () => {
   }
 
   if (!threadId) {
-    return <HomeContent />;
+    return <HomeContent connect={connect} isConnected={isConnected} />;
   }
 
   return (

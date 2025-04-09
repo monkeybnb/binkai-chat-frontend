@@ -1,24 +1,19 @@
 import { socketService } from "@/services/socket";
-import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
 
 export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const searchParams = useSearchParams();
-  const threadId = searchParams.get("threadId") as string;
-  const { address } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const { sendTransaction } = useSendTransaction();
 
   useEffect(() => {
     const handleConnect = () => {
+      console.log("Socket connected");
       setIsConnected(true);
       setIsConnecting(false);
     };
 
     const handleDisconnect = () => {
+      console.log("Socket disconnected");
       setIsConnected(false);
       setIsConnecting(false);
     };
@@ -33,27 +28,45 @@ export const useSocket = () => {
     };
   }, []);
 
-  const connect = useCallback(async () => {
-    console.log(threadId, address, "connect-useSocket1");
+  const connect = useCallback(
+    async ({
+      threadId,
+      address,
+      signMessageAsync,
+      sendTransaction,
+    }: {
+      threadId: string;
+      address: string;
+      signMessageAsync: any;
+      sendTransaction: any;
+    }) => {
+      if (!threadId || !address) {
+        console.log("Missing connection params:", { threadId, address });
+        return;
+      }
 
-    if (!threadId || !address) return;
-    console.log(address, "connect-useSocket");
-    try {
-      setIsConnecting(true);
+      try {
+        console.log("Connecting socket with:", { threadId, address });
+        setIsConnecting(true);
 
-      await socketService.connect(threadId, {
-        address,
-        signMessageAsync,
-        sendTransaction,
-      });
-    } catch (error) {
-      console.error("Failed to connect socket:", error);
-      setIsConnecting(false);
-      setIsConnected(false);
-    }
-  }, [threadId, address, signMessageAsync, sendTransaction]);
+        await socketService.connect(threadId, {
+          address,
+          signMessageAsync,
+          sendTransaction,
+        });
+
+        console.log("Socket connection successful");
+      } catch (error) {
+        console.error("Socket connection failed:", error);
+        setIsConnecting(false);
+        setIsConnected(false);
+      }
+    },
+    []
+  );
 
   const disconnect = useCallback(() => {
+    console.log("Disconnecting socket");
     socketService.disconnect();
   }, []);
 

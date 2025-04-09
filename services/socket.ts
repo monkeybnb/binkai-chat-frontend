@@ -75,6 +75,7 @@ class SocketService {
 
         // Force disconnect
         this.socket.disconnect();
+        resolve();
       } else {
         resolve();
       }
