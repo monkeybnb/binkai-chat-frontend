@@ -87,9 +87,15 @@ const ChatContainer = () => {
 
     console.log(isConnected, threadId, "isConnected");
 
-    if (!isConnected && threadId) {
+    if (threadId) {
       connect();
     }
+
+    return () => {
+      if (isConnected) {
+        disconnect();
+      }
+    };
   }, [isConnected, pendingMessage, sendMessage, setPendingMessage, threadId]);
 
   useEffect(() => {

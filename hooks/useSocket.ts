@@ -24,6 +24,7 @@ export const useSocket = () => {
     };
 
     socketService.on("connect", handleConnect);
+    socketService.on("disconnect", handleDisconnect);
 
     // Cleanup event listeners
     return () => {
