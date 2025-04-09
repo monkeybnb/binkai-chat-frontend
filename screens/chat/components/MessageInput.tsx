@@ -59,7 +59,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   }, [message]);
 
   return (
-    <div className="flex pt-6 pb-4 gap-1 flex-col items-center">
+    <div className="flex pt-6 pb-4 gap-1 flex-col items-center max-w-[720px] w-full mx-auto">
       <div className="flex gap-4 w-full flex-1 border rounded-xl px-4 py-3">
         <Textarea
           autoFocus

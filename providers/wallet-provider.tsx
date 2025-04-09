@@ -12,7 +12,7 @@ import {
   injectedWallet,
   metaMaskWallet,
   phantomWallet,
-  safeWallet,
+  safepalWallet,
   trustWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,8 +20,9 @@ import { useEffect, useState } from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { bsc } from "wagmi/chains";
 
-const WALLET_CONNECT_PROJECT_ID = "xxxxxxxxxx";
-const APP_NAME = "xxx";
+const WALLET_CONNECT_PROJECT_ID =
+  process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "xxx";
+const APP_NAME = "BINK AI";
 
 // Custom theme configuration
 const customTheme = lightTheme({
@@ -50,7 +51,7 @@ export default function QueryClientProviderWrapper({
         metaMaskWallet,
         binanceWallet,
         trustWallet,
-        safeWallet,
+        safepalWallet,
         injectedWallet,
         phantomWallet,
       ],
@@ -69,7 +70,7 @@ export default function QueryClientProviderWrapper({
   const connectors = connectorsForWallets(recommendedWalletList, {
     projectId: WALLET_CONNECT_PROJECT_ID,
     appName: APP_NAME,
-    appUrl: window?.location?.origin,
+    appUrl: process.env.NEXT_PUBLIC_APP_URL || "https://bink.ai",
   });
 
   const config = createConfig({

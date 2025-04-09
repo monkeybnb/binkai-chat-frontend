@@ -14,25 +14,24 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
+
 type Status = "IDLE" | "GENERATING";
 
 const HomeContent = () => {
   const [message, setMessage] = useState("");
-  const { sendMessage } = useChatStore();
+  const { createThread, setPendingMessage } = useChatStore();
   const { navigateToThread } = useThreadRouter();
 
   const handleSendMessage = async () => {
-    const threadId = await sendMessage({
-      message,
-      threadId: null,
-      setStatus: () => {},
-      setMessage,
-    });
-
-    if (threadId) {
+    try {
+      const threadId = await createThread(message);
+      setPendingMessage({ message, threadId });
       navigateToThread(threadId);
+    } catch (error) {
+      console.error("Error in message flow:", error);
     }
   };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden max-w-[720px] mx-auto w-full items-center justify-center gap-8 pb-6">
       <Logo className="w-[210px] h-[210px]" />
@@ -50,22 +49,33 @@ const HomeContent = () => {
   );
 };
 
-const ChatContainer = () => {
+const ChatContainer = ({ isConnected }: { isConnected: boolean }) => {
   const searchParams = useSearchParams();
   const threadId = searchParams.get("threadId") as string;
-
-  const { messages, isLoading, hasMore, fetchMore } =
-    useThreadMessages(threadId);
   const [message, setMessage] = useState("");
-
   const [status, setStatus] = useState<Status>("IDLE");
+
+  const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
+    useThreadMessages(threadId);
+
   const ref = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
   const { messagesStartRef, messagesEndRef, handleScroll, hideScroll } =
     useScroll({ status });
 
-  const { sendMessage } = useChatStore();
+  const { sendMessage, createThread, setPendingMessage, pendingMessage } =
+    useChatStore();
   const { navigateToThread } = useThreadRouter();
+
+  useEffect(() => {
+    console.log(pendingMessage, "pendingMessage", isConnected);
+    if (isConnected && pendingMessage) {
+      sendMessage(pendingMessage);
+      setPendingMessage(null);
+      setMessage("");
+      setStatus("IDLE");
+    }
+  }, [isConnected, pendingMessage, sendMessage, setPendingMessage]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -89,16 +99,13 @@ const ChatContainer = () => {
   }, [hasMore, isLoading, fetchMore]);
 
   const handleSendMessage = async () => {
+    const currentMessage = message;
     setMessage("");
-    const threadId = await sendMessage({
-      message,
-      threadId: searchParams.get("threadId"),
-      setMessage,
-      setStatus,
-    });
-
-    if (threadId) {
-      navigateToThread(threadId);
+    try {
+      sendMessage({ message: currentMessage, threadId: threadId });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setStatus("IDLE");
     }
   };
 
@@ -123,14 +130,14 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden max-w-[720px] mx-auto w-full">
+    <div className="flex-1 flex flex-col overflow-hidden w-full">
       <div className="w-full flex flex-col overflow-hidden h-full relative">
         <div
-          className="overflow-auto flex flex-col-reverse w-full p-4 custom-scrollbar"
+          className="overflow-auto mx-auto flex flex-col-reverse items-center w-full custom-scrollbar px-6"
           ref={ref}
           onScroll={handleScroll}
         >
-          <div className="mb-auto w-full flex flex-col">
+          <div className="mb-auto max-w-[720px] w-full flex flex-col p-4">
             {hasMore && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 {isLoading ? (
@@ -145,9 +152,19 @@ const ChatContainer = () => {
               </div>
             )}
             <div ref={messagesStartRef} />
-            {messages?.map((message: MessageType, index: number) => (
-              <Message key={message.id} msg={message} index={index} />
-            ))}
+            {messages
+              ?.filter(
+                (message, index, self) =>
+                  index === self.findIndex((m) => m.id === message.id)
+              )
+              ?.sort(
+                (a, b) =>
+                  new Date(a.created_at).getTime() -
+                  new Date(b.created_at).getTime()
+              )
+              .map((message: MessageType, index: number) => (
+                <Message key={message.id} msg={message} index={index} />
+              ))}
             {!messages?.length && (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 No messages yet. Start a conversation!

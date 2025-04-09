@@ -43,6 +43,7 @@ class SocketService {
   private readonly SOCKET_URL =
     process.env.NEXT_PUBLIC_API_URL || "https://api-dev.bink-chat.xyz";
   private readonly NAMESPACE = "wallet";
+  private eventHandlers: { [key: string]: Function[] } = {};
 
   private constructor() {}
 
@@ -130,6 +131,7 @@ class SocketService {
 
     this.socket.on("connect", () => {
       console.log(`Socket connected with ID: ${this.socket?.id}`);
+      this.emit("connect");
     });
 
     this.socket.on("disconnect", (reason: string) => {
@@ -231,6 +233,27 @@ class SocketService {
 
   public getSocket(): Socket | null {
     return this.socket;
+  }
+
+  private emit(event: string) {
+    if (this.eventHandlers[event]) {
+      this.eventHandlers[event].forEach((handler) => handler());
+    }
+  }
+
+  public on(event: string, handler: Function) {
+    if (!this.eventHandlers[event]) {
+      this.eventHandlers[event] = [];
+    }
+    this.eventHandlers[event].push(handler);
+  }
+
+  public off(event: string, handler: Function) {
+    if (this.eventHandlers[event]) {
+      this.eventHandlers[event] = this.eventHandlers[event].filter(
+        (h) => h !== handler
+      );
+    }
   }
 }
 

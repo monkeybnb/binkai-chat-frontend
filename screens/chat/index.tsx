@@ -10,7 +10,7 @@ const Chat = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOpenRightSider, setIsOpenRightSider] = useState(false);
 
-  const { disconnect, connect } = useSocket();
+  const { disconnect, connect, isConnected } = useSocket();
   useEffect(() => {
     const sidebarState = localStorage.getItem("sidebarState");
     if (sidebarState) {
@@ -41,8 +41,8 @@ const Chat = () => {
           setIsSidebarOpen={setIsSidebarOpen}
           setIsOpenRightSider={setIsOpenRightSider}
         />
-        <main className="flex-1 flex flex-col overflow-hidden relative px-6 pt-6">
-          <ChatContainer />
+        <main className="flex-1 flex flex-col overflow-hidden relative items-center pt-6">
+          <ChatContainer isConnected={isConnected} />
         </main>
       </div>
       <RightSidebar

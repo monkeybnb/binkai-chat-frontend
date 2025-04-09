@@ -12,62 +12,71 @@ interface MessageMarkdownProps {
 
 export const MessageMarkdown: FC<MessageMarkdownProps> = ({ content }) => {
   return (
-    <MessageMarkdownMemoized
-      // className="prose prose-p:leading-relaxed prose-p:!text-black prose-table:!text-gray-800 prose-pre:p-0 min-w-full space-y-5 break-words"
-      remarkPlugins={[remarkGfm, remarkMath]}
-      components={{
-        code({ className, children, ...props }) {
-          const childArray = React.Children.toArray(children);
-          const firstChild = childArray[0] as React.ReactElement;
-          const firstChildAsString = React.isValidElement(firstChild)
-            ? (firstChild as React.ReactElement).props.children
-            : firstChild;
+    <div className="prose prose-p:leading-relaxed prose-p:!text-black prose-table:!text-gray-800 prose-pre:p-0 min-w-full space-y-5 break-words">
+      <MessageMarkdownMemoized
+        remarkPlugins={[remarkGfm, remarkMath]}
+        components={{
+          code(props) {
+            const { children, className, node, ...rest } = props;
+            const match = /language-(\w+)/.exec(className || "");
+            const childArray = React.Children.toArray(children);
+            const firstChild = childArray[0];
+            const isInline = !match && !className;
 
-          if (firstChildAsString === "▍") {
-            return <span className="mt-1 animate-pulse cursor-default">▍</span>;
-          }
+            if (typeof firstChild === "string") {
+              if (firstChild === "▍") {
+                return (
+                  <span className="mt-1 animate-pulse cursor-default">▍</span>
+                );
+              }
 
-          if (typeof firstChildAsString === "string") {
-            childArray[0] = firstChildAsString.replace("`▍`", "▍");
-          }
+              // Handle inline code
+              if (isInline) {
+                return (
+                  <span className="font-mono text-gray-800" {...rest}>
+                    {firstChild}
+                  </span>
+                );
+              }
 
-          const match = /language-(\w+)/.exec(className || "");
+              // Handle single-line code blocks
+              if (!firstChild.includes("\n")) {
+                return (
+                  <code
+                    className={`bg-primary text-white px-1 py-[2px] before:hidden after:hidden rounded-md ${
+                      className || ""
+                    }`}
+                    {...rest}
+                  >
+                    {firstChild}
+                  </code>
+                );
+              }
+            }
 
-          if (
-            typeof firstChildAsString === "string" &&
-            !firstChildAsString.includes("\n")
-          ) {
+            // Handle multi-line code blocks
             return (
-              <code
-                className={`bg-primary text-white px-1 py-[2px] before:hidden after:hidden rounded-md ${className}`}
-                {...props}
-              >
-                {childArray}
-              </code>
+              <MessageCodeBlock
+                language={(match && match[1]) || ""}
+                value={String(children).replace(/\n$/, "")}
+                {...rest}
+              />
             );
-          }
-
-          return (
-            <MessageCodeBlock
-              language={(match && match[1]) || ""}
-              value={String(childArray).replace(/\n$/, "")}
-              {...props}
-            />
-          );
-        },
-        p({ children }) {
-          return (
-            <p className="whitespace-pre-line !mt-2 first-of-type:!mt-0">
-              {children}
-            </p>
-          );
-        },
-        img({ ...props }) {
-          return <img className="max-w-[67%]" {...props} />;
-        },
-      }}
-    >
-      {content}
-    </MessageMarkdownMemoized>
+          },
+          p({ children }) {
+            return (
+              <p className="whitespace-pre-line !mt-2 first-of-type:!mt-0">
+                {children}
+              </p>
+            );
+          },
+          img({ ...props }) {
+            return <img className="max-w-[67%]" {...props} />;
+          },
+        }}
+      >
+        {content}
+      </MessageMarkdownMemoized>
+    </div>
   );
 };

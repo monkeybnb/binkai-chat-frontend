@@ -58,7 +58,7 @@ export const MessageCodeBlock: FC<MessageCodeBlockProps> = memo(
         <SyntaxHighlighter
           language={language}
           style={oneDark}
-          // showLineNumbers
+          showLineNumbers
           customStyle={{
             margin: 0,
             width: "100%",

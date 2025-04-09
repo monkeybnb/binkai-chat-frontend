@@ -1,76 +1,63 @@
 import { socketService } from "@/services/socket";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
 
 export const useSocket = () => {
-  const searchParams = useSearchParams();
-  const threadId = searchParams.get("threadId");
-  const previousThreadId = useRef<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-
+  const searchParams = useSearchParams();
+  const threadId = searchParams.get("threadId") as string;
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { sendTransaction } = useSendTransaction();
 
+  useEffect(() => {
+    const handleConnect = () => {
+      setIsConnected(true);
+      setIsConnecting(false);
+    };
+
+    const handleDisconnect = () => {
+      setIsConnected(false);
+      setIsConnecting(false);
+    };
+
+    socketService.on("connect", handleConnect);
+    socketService.on("disconnect", handleDisconnect);
+
+    // Cleanup event listeners
+    return () => {
+      socketService.off("connect", handleConnect);
+      socketService.off("disconnect", handleDisconnect);
+    };
+  }, []);
+
   const connect = useCallback(async () => {
-    if (!threadId || !address || !signMessageAsync || isConnecting) return;
+    if (!threadId || !address) return;
 
     try {
       setIsConnecting(true);
-      // If thread has changed, ensure cleanup
-      if (previousThreadId.current && previousThreadId.current !== threadId) {
-        console.log(
-          `Thread changed from ${previousThreadId.current} to ${threadId}`
-        );
-        await socketService.disconnect();
-      }
-
       await socketService.connect(threadId, {
         address,
         signMessageAsync,
         sendTransaction,
       });
-      previousThreadId.current = threadId;
     } catch (error) {
-      console.error("Socket connection error:", error);
-    } finally {
+      console.error("Failed to connect socket:", error);
       setIsConnecting(false);
+      setIsConnected(false);
     }
-  }, [threadId, address, signMessageAsync, isConnecting]);
+  }, [threadId, address, signMessageAsync, sendTransaction]);
 
   const disconnect = useCallback(() => {
     socketService.disconnect();
-    previousThreadId.current = null;
   }, []);
 
-  // useEffect(() => {
-  //   if (typeof document === "undefined") return;
-
-  //   const handleVisibilityChange = () => {
-  //     if (document.visibilityState === "visible") {
-  //       connect();
-  //     }
-  //   };
-
-  //   document.addEventListener("visibilitychange", handleVisibilityChange);
-  //   window.addEventListener("focus", connect);
-  //   window.addEventListener("online", connect);
-
-  //   return () => {
-  //     document.removeEventListener("visibilitychange", handleVisibilityChange);
-  //     window.removeEventListener("focus", connect);
-  //     window.removeEventListener("online", connect);
-  //   };
-  // }, [connect]);
-
   return {
-    isConnected: socketService.isConnected(),
+    isConnected,
     isConnecting,
-    sendMessage: socketService.sendMessage.bind(socketService),
-    disconnect,
     connect,
-    currentThreadId: threadId,
-    isReady: Boolean(address && signMessageAsync),
+    disconnect,
   };
 };

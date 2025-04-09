@@ -11,7 +11,7 @@ interface MessageProps {
 }
 
 export const Message = ({ msg }: MessageProps) => {
-  const isUser = msg.role === "user";
+  const isUser = !msg.is_ai;
 
   if (msg.isLoading)
     return (

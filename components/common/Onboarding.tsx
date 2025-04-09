@@ -4,11 +4,11 @@ import { GridBackground, LogoText } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { WalletButton as RainbowWalletButton } from "@rainbow-me/rainbowkit";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId, useChains, useDisconnect } from "wagmi";
 import SocialLink from "./SocialLink";
 
-const WALLETS = ["metamask", "phantom", "trust", "safe"];
+const WALLETS = ["binance", "phantom", "trust", "safepal"];
 
 interface CustomWalletButtonProps {
   ready: boolean;
@@ -25,6 +25,7 @@ const CustomWalletButton = ({
   connector,
 }: CustomWalletButtonProps) => {
   const [iconUrl, setIconUrl] = useState<string>();
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
     const loadIcon = async () => {
@@ -38,12 +39,28 @@ const CustomWalletButton = ({
     loadIcon();
   }, [connector]);
 
-  // if (!ready) return null;
+  const handleConnect = useCallback(async () => {
+    if (isConnecting || !ready) return;
+
+    try {
+      setIsConnecting(true);
+      await connect();
+    } catch (error) {
+      console.error("Failed to connect:", error);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [connect, ready, isConnecting]);
 
   return (
     <button
-      className="w-full h-[72px] bg-muted hover:bg-brand-50 flex items-center rounded-xl justify-between pl-5 pr-4 py-4 cursor-pointer"
-      onClick={connect}
+      className={`w-full h-[72px] bg-muted hover:bg-brand-50 flex items-center rounded-xl justify-between pl-5 pr-4 py-4 ${
+        !ready || isConnecting
+          ? "opacity-50 cursor-not-allowed"
+          : "cursor-pointer"
+      }`}
+      onClick={handleConnect}
+      disabled={!ready || isConnecting}
     >
       <div className="flex items-center gap-4 flex-1">
         {iconUrl && (
@@ -53,7 +70,9 @@ const CustomWalletButton = ({
             className="w-10 h-10 rounded-full aspect-square"
           />
         )}
-        <span className="text-label-medium">{connector.name}</span>
+        <span className="text-label-medium">
+          {isConnecting ? "Connecting..." : connector.name}
+        </span>
       </div>
       <ChevronRight className="w-5 h-5 text-muted-foreground" />
     </button>
@@ -91,6 +110,20 @@ const ConnectedChains = () => {
 const Onboarding = () => {
   const { isConnected } = useAccount();
   const { disconnect } = useDisconnect();
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const handleDisconnect = async () => {
+    if (isDisconnecting) return;
+
+    try {
+      setIsDisconnecting(true);
+      await disconnect();
+    } catch (error) {
+      console.error("Failed to disconnect:", error);
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col items-center justify-center relative bg-background">
@@ -118,9 +151,10 @@ const Onboarding = () => {
               <Button
                 variant="secondary"
                 className="w-full h-[52px] mt-4"
-                onClick={() => disconnect()}
+                onClick={handleDisconnect}
+                disabled={isDisconnecting}
               >
-                Disconnect Wallet
+                {isDisconnecting ? "Disconnecting..." : "Disconnect Wallet"}
               </Button>
             </>
           )}
