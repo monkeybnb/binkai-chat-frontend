@@ -19,19 +19,10 @@ import { Message } from "./Message";
 import MessageInput from "./MessageInput";
 type Status = "IDLE" | "GENERATING";
 
-const HomeContent = ({
-  connect,
-  isConnected,
-}: {
-  connect: any;
-  isConnected: boolean;
-}) => {
+const HomeContent = () => {
   const [message, setMessage] = useState("");
   const { createThread } = useChatStore();
   const { navigateToThread } = useThreadRouter();
-  const { address } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const { sendTransaction } = useSendTransaction();
 
   const handleSendMessage = async () => {
     try {
@@ -42,15 +33,6 @@ const HomeContent = ({
         "pendingMessage",
         JSON.stringify({ message, threadId })
       );
-
-      if (!isConnected && address && threadId) {
-        connect({
-          threadId,
-          address: address as string,
-          signMessageAsync,
-          sendTransaction,
-        });
-      }
     } catch (error) {
       console.error("Error in message flow:", error);
     }
@@ -83,7 +65,7 @@ const ChatContainer = () => {
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { sendTransaction } = useSendTransaction();
-  const { disconnect, connect, isConnected } = useSocket();
+  const { connect, isConnected } = useSocket();
 
   const ref = useRef<HTMLDivElement>(null);
   const { ref: loadingRef, inView } = useInView({
@@ -94,17 +76,12 @@ const ChatContainer = () => {
   const { messagesStartRef, messagesEndRef, handleScroll, hideScroll } =
     useScroll({ status });
 
-  const { sendMessage, createThread } = useChatStore();
-  const { navigateToThread } = useThreadRouter();
+  const { sendMessage } = useChatStore();
 
   useEffect(() => {
-    console.log(address, threadId, "address, threadId");
-
     if (!address || !threadId) {
       return;
     }
-
-    console.log(address, threadId, "address, threadId");
 
     connect({
       threadId,
@@ -144,16 +121,6 @@ const ChatContainer = () => {
     const currentMessage = message;
     setMessage("");
     try {
-      if (!threadId) {
-        const threadId = await createThread(currentMessage);
-        navigateToThread(threadId);
-
-        localStorage.setItem(
-          "pendingMessage",
-          JSON.stringify({ message: currentMessage, threadId })
-        );
-      }
-
       sendMessage({ message: currentMessage, threadId: threadId });
     } catch (error) {
       console.error("Error sending message:", error);
@@ -178,7 +145,7 @@ const ChatContainer = () => {
   }
 
   if (!threadId) {
-    return <HomeContent connect={connect} isConnected={isConnected} />;
+    return <HomeContent />;
   }
 
   return (

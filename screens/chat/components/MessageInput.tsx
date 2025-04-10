@@ -7,10 +7,7 @@ import { useChatStore } from "@/stores";
 import { useAuthStore } from "@/stores/auth-store";
 import { useEffect, useRef } from "react";
 
-const ENTER_KEY = {
-  TEXT: "Enter",
-  CODE: 13,
-} as const;
+const ENTER_KEY = "Enter";
 
 interface MessageInputProps {
   message: string;
@@ -33,13 +30,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const handleKeyDown = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
-    if (event.ctrlKey && event.key === ENTER_KEY.TEXT) {
+    if (event.ctrlKey && event.key === ENTER_KEY) {
       event.preventDefault();
       setMessage((prevMsg: string) => `${prevMsg}\n`);
       return;
     }
 
-    if (event.keyCode === ENTER_KEY.CODE && !event.shiftKey) {
+    if (event.key === ENTER_KEY && !event.shiftKey) {
       event.preventDefault();
       onSendMessage();
     }
@@ -59,7 +56,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   }, [message]);
 
   return (
-    <div className="flex pt-6 pb-4 gap-1 flex-col items-center max-w-[720px] w-full mx-auto">
+    <div className="flex pt-6 pb-4 gap-1 flex-col items-center max-w-[720px] w-full mx-auto px-6">
       <div className="flex gap-4 w-full flex-1 border rounded-xl px-4 py-3">
         <Textarea
           autoFocus

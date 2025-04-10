@@ -30,16 +30,23 @@ interface WalletResponse {
   error?: string;
 }
 
-interface WagmiConfig {
-  address: string;
-  signMessageAsync: (args: { message: string }) => Promise<string>;
-  sendTransaction: any;
+interface WalletConfig {
+  evm?: {
+    address: string;
+    signMessageAsync: (args: { message: string }) => Promise<string>;
+    sendTransaction: any;
+  };
+  solana?: {
+    address: string;
+    signMessageAsync: (args: { message: string }) => Promise<string>;
+    sendTransaction: any;
+  };
 }
 
 class SocketService {
   private static instance: SocketService;
   private socket: Socket | null = null;
-  private wagmiConfig: WagmiConfig | null = null;
+  private walletConfig: WalletConfig | null = null;
   private readonly SOCKET_URL =
     process.env.NEXT_PUBLIC_API_URL || "https://api-dev.bink-chat.xyz";
   private readonly NAMESPACE = "wallet";
@@ -84,13 +91,13 @@ class SocketService {
 
   public async connect(
     threadId: string,
-    wagmiConfig: WagmiConfig
+    walletConfig: WalletConfig
   ): Promise<void> {
     console.log(`Connecting to socket with thread ID: ${threadId}`);
 
     // Wait for cleanup to complete before creating new socket
     await this.cleanupSocket();
-    this.wagmiConfig = wagmiConfig;
+    this.walletConfig = walletConfig;
 
     this.socket = io(`${this.SOCKET_URL}/${this.NAMESPACE}`, {
       query: {
@@ -108,7 +115,7 @@ class SocketService {
 
   public async disconnect(): Promise<void> {
     await this.cleanupSocket();
-    this.wagmiConfig = null;
+    this.walletConfig = null;
   }
 
   public sendMessage(message: string): void {
@@ -153,12 +160,12 @@ class SocketService {
         callback: (response: WalletResponse) => void
       ) => {
         try {
-          console.log("get_address request:", this.wagmiConfig);
-          if (!this.wagmiConfig) {
+          console.log("get_address request:", this.walletConfig);
+          if (!this.walletConfig) {
             throw new Error("Wallet not connected");
           }
           console.log("get_address request:", data);
-          callback({ address: this.wagmiConfig.address });
+          callback({ address: this.walletConfig.evm?.address });
         } catch (error) {
           console.error("Error getting address:", error);
           callback({
@@ -175,11 +182,11 @@ class SocketService {
         callback: (response: WalletResponse) => void
       ) => {
         try {
-          if (!this.wagmiConfig) {
+          if (!this.walletConfig) {
             throw new Error("Wallet not connected");
           }
           console.log("sign_message request:", data);
-          const signature = await this.wagmiConfig.signMessageAsync({
+          const signature = await this.walletConfig.evm?.signMessageAsync({
             message: data.message,
           });
           callback({ signature });
@@ -199,15 +206,16 @@ class SocketService {
         callback: (response: WalletResponse) => void
       ) => {
         try {
-          if (!this.wagmiConfig) {
+          if (!this.walletConfig) {
             throw new Error("Wallet not connected");
           }
           console.log("sign_transaction request:", data);
 
-          const signedTransaction = await this.wagmiConfig.sendTransaction({
-            to: data.transaction.to,
-            value: parseEther(data.transaction.value),
-          });
+          const signedTransaction =
+            await this.walletConfig.evm?.sendTransaction({
+              to: data.transaction.to,
+              value: parseEther(data.transaction.value),
+            });
 
           console.log("signedTransaction", signedTransaction);
 

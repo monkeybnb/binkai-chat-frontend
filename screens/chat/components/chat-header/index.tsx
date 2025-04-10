@@ -3,18 +3,21 @@
 import { Edit, LogoText, Menu } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Dispatch, SetStateAction } from "react";
 import UserBtn from "./UserBtn";
+
+interface ChatHeaderProps {
+  isSidebarOpen: boolean;
+  isOpenRightSider: boolean;
+  setIsSidebarOpen: (value: boolean) => void;
+  setIsOpenRightSider: (value: boolean) => void;
+}
 
 export function ChatHeader({
   isSidebarOpen,
+  isOpenRightSider,
   setIsSidebarOpen,
   setIsOpenRightSider,
-}: {
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: Dispatch<SetStateAction<boolean>>;
-  setIsOpenRightSider: Dispatch<SetStateAction<boolean>>;
-}) {
+}: ChatHeaderProps) {
   const router = useRouter();
 
   return (
@@ -45,7 +48,7 @@ export function ChatHeader({
       </div>
 
       <div className="flex items-center gap-4">
-        <UserBtn onClick={() => setIsOpenRightSider((prev) => !prev)} />
+        <UserBtn onClick={() => setIsOpenRightSider(!isOpenRightSider)} />
       </div>
     </header>
   );

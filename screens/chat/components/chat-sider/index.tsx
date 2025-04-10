@@ -6,13 +6,12 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { ChannelList } from "./ChannelList";
 
-const ChatSidebar = ({
-  isSidebarOpen,
-  setIsSidebarOpen,
-}: {
+interface ChatSiderProps {
   isSidebarOpen: boolean;
-  setIsSidebarOpen: (isSidebarOpen: boolean) => void;
-}) => {
+  setIsSidebarOpen: (value: boolean) => void;
+}
+
+const ChatSidebar = ({ isSidebarOpen, setIsSidebarOpen }: ChatSiderProps) => {
   const router = useRouter();
 
   return (

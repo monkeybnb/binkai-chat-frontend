@@ -7,13 +7,11 @@ export const useSocket = () => {
 
   useEffect(() => {
     const handleConnect = () => {
-      console.log("Socket connected");
       setIsConnected(true);
       setIsConnecting(false);
     };
 
     const handleDisconnect = () => {
-      console.log("Socket disconnected");
       setIsConnected(false);
       setIsConnecting(false);
     };
@@ -21,7 +19,6 @@ export const useSocket = () => {
     socketService.on("connect", handleConnect);
     socketService.on("disconnect", handleDisconnect);
 
-    // Cleanup event listeners
     return () => {
       socketService.off("connect", handleConnect);
       socketService.off("disconnect", handleDisconnect);
@@ -46,16 +43,15 @@ export const useSocket = () => {
       }
 
       try {
-        console.log("Connecting socket with:", { threadId, address });
         setIsConnecting(true);
 
         await socketService.connect(threadId, {
-          address,
-          signMessageAsync,
-          sendTransaction,
+          evm: {
+            address,
+            signMessageAsync,
+            sendTransaction,
+          },
         });
-
-        console.log("Socket connection successful");
       } catch (error) {
         console.error("Socket connection failed:", error);
         setIsConnecting(false);

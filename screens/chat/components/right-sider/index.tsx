@@ -47,13 +47,15 @@ const NetworkItem = ({
   </div>
 );
 
-const RightSidebar = ({
+interface RightSiderProps {
+  isOpenRightSider: boolean;
+  setIsOpenRightSider: (value: boolean) => void;
+}
+
+export default function RightSider({
   isOpenRightSider,
   setIsOpenRightSider,
-}: {
-  isOpenRightSider: boolean;
-  setIsOpenRightSider: (isOpenRightSider: boolean) => void;
-}) => {
+}: RightSiderProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { logout } = useAuthStore();
@@ -145,6 +147,4 @@ const RightSidebar = ({
       />
     </div>
   );
-};
-
-export default RightSidebar;
+}

@@ -1,18 +1,9 @@
 "use client";
 
-import { Delete } from "@/components/icons";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { Thread, useChatStore, useThreads } from "@/stores";
-import { MoreVertical } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Thread, useThreads } from "@/stores";
+
+import { useEffect, useRef } from "react";
+import ChannelGroup from "./ChannelGroup";
 
 const ChannelListSkeleton = () => (
   <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-4">
@@ -21,100 +12,6 @@ const ChannelListSkeleton = () => (
     <div className="animate-pulse h-9 bg-muted rounded-md" />
   </div>
 );
-
-const ChannelItem = ({ thread }: { thread: Thread }) => {
-  const searchParams = useSearchParams();
-  const selectedThreadId = searchParams.get("threadId");
-  const router = useRouter();
-  const { deleteThread } = useChatStore();
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      setIsDeleting(true);
-      await deleteThread(thread.id);
-    } catch (error) {
-      console.error("Error deleting thread:", error);
-    } finally {
-      setIsDeleting(false);
-      router.push("/");
-    }
-  };
-
-  return (
-    <div
-      className={cn(
-        "hover:bg-muted relative rounded-lg cursor-pointer px-3 py-2 flex items-center justify-between group h-10 overflow-hidden",
-        thread.id === selectedThreadId && "bg-muted"
-      )}
-      onClick={() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set("threadId", thread.id);
-        window.history.pushState({}, "", url.toString());
-        router.replace(url.toString(), { scroll: false });
-      }}
-    >
-      <div className="truncate text-body-small flex-1">{thread.title}</div>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-7 h-7 hidden group-hover:flex"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="w-[148px] rounded-xl"
-          side="right"
-        >
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Delete /> {isDeleting ? "Deleting..." : "Delete"}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-};
-
-const LABEL = {
-  today: "Today",
-  yesterday: "Yesterday",
-  last_7_days: "Last 7 days",
-  last_30_days: "Last 30 days",
-  pinned: "Pinned",
-};
-
-const ChannelGroup = ({
-  labelKey,
-  values,
-}: {
-  labelKey: string;
-  values: Thread[];
-}) => {
-  if (!values?.length) return null;
-
-  return (
-    <div className="mb-6 flex flex-col gap-2">
-      <div className="text-label-small text-muted-foreground px-3">
-        {LABEL[labelKey as keyof typeof LABEL]}
-      </div>
-      <div className="flex flex-col gap-1">
-        {values.map((value) => (
-          <ChannelItem key={value.id} thread={value} />
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const groupByTimeframe = (threads: Thread[]) => {
   const todayStart = new Date(new Date().setHours(0, 0, 0, 0)).getTime();

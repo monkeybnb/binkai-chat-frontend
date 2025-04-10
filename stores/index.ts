@@ -414,7 +414,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       //   const chunk = decoder.decode(value);
       //   content += chunk;
       // }
-
+      console.log(response, "response");
       get().updateMessage(tempMsgUid, {
         content: response.response,
         is_ai: true,
