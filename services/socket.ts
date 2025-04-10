@@ -248,7 +248,9 @@ class SocketService {
 
             const signedTx = await window.solana.signTransaction(tx);
 
-            signedTransaction = signedTx.serialize().toString("base64");
+            signedTransaction = Buffer.from(signedTx.serialize()).toString(
+              "base64"
+            );
           } else {
             signedTransaction = await this.walletConfig.evm?.signTransaction(
               data.transaction
