@@ -1,5 +1,7 @@
-import { connection } from "@/screens/chat/components/right-sider";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import {
+  Transaction as SolanaTransaction,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { io, Socket } from "socket.io-client";
 
 interface MessageData {
@@ -233,16 +235,18 @@ class SocketService {
           console.log("sign_transaction request:", data);
           let signedTransaction: string;
           if (data.network === "solana") {
-            const transaction = new Transaction();
+            let tx: SolanaTransaction | VersionedTransaction;
+            try {
+              tx = VersionedTransaction.deserialize(
+                Buffer.from(data.transaction as any, "base64") as any
+              );
+            } catch (e) {
+              tx = SolanaTransaction.from(
+                Buffer.from(data.transaction as any, "base64")
+              );
+            }
 
-            transaction.recentBlockhash = (
-              await connection.getLatestBlockhash()
-            ).blockhash;
-            transaction.feePayer = new PublicKey(
-              this.walletConfig.solana?.address as string
-            );
-
-            const signedTx = await window.solana.signTransaction(transaction);
+            const signedTx = await window.solana.signTransaction(tx);
 
             signedTransaction = signedTx.serialize().toString("base64");
           } else {
