@@ -29,8 +29,8 @@ export const deleteThread = async (threadId: string) =>
   api.delete(`/thread/${threadId}`);
 
 export const getStreamMessage = async (params: {
-  thread_id: string;
-  question: string;
+  threadId: string;
+  message: string;
 }) => {
   return api.get(`/chat/stream`, {
     data: params,
@@ -46,5 +46,5 @@ export const sendChat = async (params: {
   threadId: string;
   message: string;
 }) => {
-  return api.post("/chat", params);
+  return api.post("/chat", params, { timeout: 300000 });
 };

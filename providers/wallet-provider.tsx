@@ -15,8 +15,21 @@ import {
   safepalWallet,
   trustWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import {
+  ConnectionProvider,
+  WalletProvider as SolanaWalletProvider,
+} from "@solana/wallet-adapter-react";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TorusWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+import { clusterApiUrl } from "@solana/web3.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { bsc } from "wagmi/chains";
 
@@ -24,7 +37,6 @@ const WALLET_CONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "xxx";
 const APP_NAME = "BINK AI";
 
-// Custom theme configuration
 const customTheme = lightTheme({
   accentColor: "var(--background)",
   accentColorForeground: "var(--foreground)",
@@ -33,7 +45,6 @@ const customTheme = lightTheme({
   overlayBlur: "small",
 });
 
-// Initialize configurations outside component
 const recommendedWalletList: WalletList = [
   {
     groupName: "Recommended",
@@ -63,7 +74,6 @@ const config = createConfig({
   },
 });
 
-// Initialize QueryClient outside component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -80,17 +90,35 @@ export default function QueryClientProviderWrapper({
 }) {
   const [mounted, setMounted] = useState(false);
 
+  const network = WalletAdapterNetwork.Devnet;
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new TorusWalletAdapter(),
+    ],
+    []
+  );
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Prevent hydration mismatch
   if (!mounted) return null;
 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={customTheme}>{children}</RainbowKitProvider>
+        <ConnectionProvider endpoint={endpoint}>
+          <SolanaWalletProvider wallets={wallets} autoConnect>
+            <WalletModalProvider>
+              <RainbowKitProvider modalSize="compact" theme={customTheme}>
+                {children}
+              </RainbowKitProvider>
+            </WalletModalProvider>
+          </SolanaWalletProvider>
+        </ConnectionProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

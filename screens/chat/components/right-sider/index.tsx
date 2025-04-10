@@ -2,12 +2,25 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { AlignArrowLeft, Exit } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { socketService } from "@/services/socket";
 import { useAuthStore } from "@/stores/auth-store";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { Connection } from "@solana/web3.js";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useChainId, useDisconnect, useSwitchChain } from "wagmi";
+import { useEffect, useState } from "react";
+import {
+  useAccount,
+  useDisconnect,
+  useSignMessage,
+  useWalletClient,
+} from "wagmi";
 import { Chain } from "wagmi/chains";
+import ConnectBaseWalletDialog from "./ConnectBaseWalletDialog";
+let rpc =
+  process.env.NEXT_PUBLIC_RPC_SOLANA_URL ||
+  "https://api.mainnet-beta.solana.com";
+export const connection = new Connection(rpc, "confirmed");
 
 export const BSCIcon =
   "https://s3-alpha-sig.figma.com/img/b092/31a9/0c06efc55ecafd0466d11cb0b941c09a?Expires=1744588800&Key-Pair-Id=APKAQ4GOSFWCW27IBOMQ&Signature=UVYdwK5FB3-Fg1bf2zxgZeOfeQGWyyAMhX4SiYtxUn-QvqNkwGUEeuKk8knLii0Pw54PNUmzYshpdQhgLqtKBTyfEGMRNOGZ3hzG1TZZ1tBaXYmuEA3P6m9o7hym18PAwJGH4bEX2trF-pmHtyerLM547uW7xbnEsLfro45SD-N9UDO2fsE4t7nKN9-lhsOoeZplWntGfPQxPGsj92qzQqWMOuPRR-1rF-xsC7FYmYhaDH9DcMUkRU4lMbqOhzAy2i9qv1NzYXVfcrE6agwfwOC07U7XXrzfZe29LFeoI8939VbAyoni0eV1NFZhK1p38jryLZgES5sqxILUpbWYZA__";
@@ -16,41 +29,71 @@ const NetworkItem = ({
   chain,
   isConnected = false,
   switchChain,
+  disconnect,
 }: {
-  chain: Chain;
+  chain: any;
   isConnected?: boolean;
   switchChain?: any;
-}) => (
-  <div className="flex items-center justify-between py-2 pl-3 pr-2 border rounded-xl gap-3">
-    <div className="flex items-center gap-3 overflow-hidden flex-1">
-      <div className="w-7 h-7 relative rounded-full overflow-hidden">
-        <Image src={BSCIcon} alt={chain.name} fill className="object-contain" />
+  disconnect?: any;
+}) => {
+  return (
+    <div className="flex items-center justify-between py-2 pl-3 pr-2 border rounded-xl gap-3">
+      <div className="flex items-center gap-3 overflow-hidden flex-1">
+        <div className="w-7 h-7 relative rounded-full overflow-hidden">
+          <Image
+            src={chain.icon}
+            alt={chain.name}
+            fill
+            className="object-contain"
+          />
+        </div>
+        <span className="text-label-small whitespace-nowrap overflow-hidden text-ellipsis flex-1">
+          {chain.name}
+        </span>
       </div>
-      <span className="text-label-small whitespace-nowrap overflow-hidden text-ellipsis flex-1">
-        {chain.name}
-      </span>
+      {isConnected ? (
+        <Button
+          variant="secondary"
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => disconnect(chain)}
+        >
+          <Exit />
+        </Button>
+      ) : (
+        <Button
+          variant="default"
+          size="sm"
+          className="rounded-lg"
+          onClick={() => switchChain(chain)}
+        >
+          Connect
+        </Button>
+      )}
     </div>
-    {isConnected ? (
-      <Button variant="secondary" size="icon" className="h-9 w-9">
-        <Exit />
-      </Button>
-    ) : (
-      <Button
-        variant="default"
-        size="sm"
-        className="rounded-lg"
-        onClick={() => switchChain(chain)}
-      >
-        Connect
-      </Button>
-    )}
-  </div>
-);
+  );
+};
 
 interface RightSiderProps {
   isOpenRightSider: boolean;
   setIsOpenRightSider: (value: boolean) => void;
 }
+
+export const solanaNetworks = [
+  {
+    id: 1,
+    name: "Solana",
+    icon: "/images/sol.png",
+  },
+];
+
+export const evmNetworks = [
+  {
+    id: 1,
+    name: "BSC",
+    icon: "/images/bsc.png",
+  },
+];
 
 export default function RightSider({
   isOpenRightSider,
@@ -60,15 +103,94 @@ export default function RightSider({
   const [open, setOpen] = useState(false);
   const { logout } = useAuthStore();
   const { disconnectAsync } = useDisconnect();
-  const chainId = useChainId();
+  const { isConnected: isConnectedEvm, address } = useAccount();
+  const {
+    connected: connectedSolana,
+    disconnect: disconnectSolana,
+    publicKey,
+    signMessage: signMessageSolana,
+  } = useWallet();
+  const { signMessageAsync } = useSignMessage();
+  const { data: walletClient } = useWalletClient();
+  const [networkConnectState, setNetworkConnectState] = useState<{
+    type: string;
+    visible: boolean;
+  }>({ type: "", visible: false });
 
-  const { switchChain, chains } = useSwitchChain();
+  useEffect(() => {
+    if (connectedSolana) {
+      socketService.updateWalletConfig({
+        solana: {
+          address: publicKey?.toString() || "",
+          signMessageAsync: async ({ message }: { message: string }) => {
+            if (!publicKey) throw new Error("Wallet not connected");
 
-  const connectedChains = chains.filter((chain) => chain.id === chainId);
-  const unConnectedChains = chains.filter((chain) => chain.id !== chainId);
+            const encodedMessage = new TextEncoder().encode(message);
+            const signedMessage = await signMessageSolana?.(encodedMessage);
+            if (!signedMessage) throw new Error("Failed to sign message");
+            return Buffer.from(signedMessage).toString("base64");
+          },
+        },
+      });
+      setNetworkConnectState({
+        type: "",
+        visible: false,
+      });
+    }
+  }, [connectedSolana]);
 
-  const handleSwitchChain = (chain: Chain) => {
-    switchChain?.({ chainId: chain.id });
+  useEffect(() => {
+    if (isConnectedEvm) {
+      socketService.updateWalletConfig({
+        evm: {
+          address: address ?? "",
+          signMessageAsync,
+          signTransaction: walletClient?.signTransaction,
+        },
+      });
+      setNetworkConnectState({
+        type: "",
+        visible: false,
+      });
+    }
+  }, [isConnectedEvm]);
+
+  const handleConnectEvm = (chain: Chain) => {
+    setNetworkConnectState({
+      type: "evm",
+      visible: true,
+    });
+  };
+
+  const handleConnectSolana = async () => {
+    try {
+      if (!connectedSolana) {
+        setNetworkConnectState({
+          type: "solana",
+          visible: true,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to connect Solana wallet:", error);
+    }
+  };
+
+  const handleDisconnectSolana = async () => {
+    await disconnectSolana();
+
+    if (!isConnectedEvm) {
+      router.push("/");
+      logout();
+    }
+  };
+
+  const handleDisconnectEvm = async () => {
+    await disconnectAsync();
+
+    if (!connectedSolana) {
+      router.push("/");
+      logout();
+    }
   };
 
   return (
@@ -96,18 +218,29 @@ export default function RightSider({
         </div>
       </div>
       <div className="flex-1 overflow-auto p-4 flex flex-col gap-6">
-        {unConnectedChains.length > 0 && (
+        {(!connectedSolana || !isConnectedEvm) && (
           <div className="flex flex-col gap-2">
             <h3 className="px-3 text-label-small text-muted-foreground">
               Supported Network
             </h3>
-            {unConnectedChains.map((chain) => (
-              <NetworkItem
-                key={chain.name}
-                chain={chain}
-                switchChain={handleSwitchChain}
-              />
-            ))}
+            {!isConnectedEvm
+              ? evmNetworks.map((chain) => (
+                  <NetworkItem
+                    key={chain.name}
+                    chain={chain}
+                    switchChain={handleConnectEvm}
+                  />
+                ))
+              : null}
+            {!connectedSolana
+              ? solanaNetworks.map((chain) => (
+                  <NetworkItem
+                    key={chain.name}
+                    chain={chain}
+                    switchChain={handleConnectSolana}
+                  />
+                ))
+              : null}
           </div>
         )}
 
@@ -115,9 +248,26 @@ export default function RightSider({
           <h3 className="px-3 text-label-small text-muted-foreground">
             Connected
           </h3>
-          {connectedChains.map((network) => (
-            <NetworkItem key={network.name} chain={network} isConnected />
-          ))}
+          {isConnectedEvm
+            ? evmNetworks.map((chain) => (
+                <NetworkItem
+                  key={chain.name}
+                  chain={chain}
+                  isConnected={true}
+                  disconnect={handleDisconnectEvm}
+                />
+              ))
+            : null}
+          {connectedSolana
+            ? solanaNetworks.map((chain) => (
+                <NetworkItem
+                  key={chain.name}
+                  chain={chain}
+                  disconnect={handleDisconnectSolana}
+                  isConnected={true}
+                />
+              ))
+            : null}
         </div>
       </div>
       <div className="p-4">
@@ -137,6 +287,7 @@ export default function RightSider({
         onConfirm={async () => {
           router.push("/");
           await disconnectAsync();
+          await disconnectSolana();
           logout();
           setOpen(false);
         }}
@@ -144,6 +295,10 @@ export default function RightSider({
         confirmText="Disconnect"
         open={open}
         setOpen={setOpen}
+      />
+      <ConnectBaseWalletDialog
+        networkConnectState={networkConnectState}
+        setNetworkConnectState={setNetworkConnectState}
       />
     </div>
   );

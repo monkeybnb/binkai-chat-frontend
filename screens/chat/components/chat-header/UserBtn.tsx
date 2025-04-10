@@ -1,13 +1,15 @@
 "use client";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Image from "next/image";
-import { useChainId, useChains } from "wagmi";
-import { BSCIcon } from "../right-sider";
+import { useAccount } from "wagmi";
+import { evmNetworks, solanaNetworks } from "../right-sider";
 
 const NetworkList = () => {
-  const chains = useChains();
-  const chainId = useChainId();
-  const chain = chains.find((chain) => chain.id === chainId);
-  const networks = [chain];
+  const { connected: solanaConnected } = useWallet();
+  const { isConnected: evmConnected } = useAccount();
+  const evm = evmConnected ? evmNetworks : [];
+  const solana = solanaConnected ? solanaNetworks : [];
+  const networks = [...evm, ...solana];
   const displayedNetworks = networks.slice(0, 3);
   const remainingCount = networks.length - displayedNetworks.length;
 
@@ -20,7 +22,7 @@ const NetworkList = () => {
           style={{ zIndex: networks.length - index }}
         >
           <Image
-            src={BSCIcon}
+            src={network?.icon}
             alt={network?.name || ""}
             fill
             className="object-contain w-9 h-9"

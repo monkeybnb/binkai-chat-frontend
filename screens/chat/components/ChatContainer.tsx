@@ -11,10 +11,16 @@ import {
   useThreadMessages,
   useThreadRouter,
 } from "@/stores";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
+import {
+  useAccount,
+  useSendTransaction,
+  useSignMessage,
+  useWalletClient,
+} from "wagmi";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
 type Status = "IDLE" | "GENERATING";
@@ -63,9 +69,17 @@ const ChatContainer = () => {
   const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
     useThreadMessages(threadId);
   const { address } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  const { sendTransaction } = useSendTransaction();
+
+  const { signMessageAsync: signMessageAsyncEvm } = useSignMessage();
+  const { sendTransaction: sendTransactionEvm } = useSendTransaction();
   const { connect, isConnected } = useSocket();
+  const { data: walletClient } = useWalletClient();
+
+  const {
+    signMessage: signMessageAsyncSolana,
+    sendTransaction: sendTransactionSolana,
+    publicKey: publicKeySolana,
+  } = useWallet();
 
   const ref = useRef<HTMLDivElement>(null);
   const { ref: loadingRef, inView } = useInView({
@@ -85,9 +99,15 @@ const ChatContainer = () => {
 
     connect({
       threadId,
-      address: address as string,
-      signMessageAsync,
-      sendTransaction,
+      evm: {
+        address: address as string,
+        signMessageAsync: signMessageAsyncEvm,
+        signTransaction: walletClient?.signTransaction,
+      },
+      solana: {
+        address: publicKeySolana?.toBase58() as string,
+        signMessageAsync: signMessageAsyncSolana,
+      },
     });
 
     // return () => {

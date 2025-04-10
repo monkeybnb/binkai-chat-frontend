@@ -3,12 +3,12 @@
 import { GridBackground, LogoText } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { WalletButton as RainbowWalletButton } from "@rainbow-me/rainbowkit";
-import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId, useChains, useDisconnect } from "wagmi";
 import SocialLink from "./SocialLink";
+import WalletButton from "./WalletButton";
 
-const WALLETS = ["binance", "metamask", "phantom", "safepal"];
+export const WALLETS = ["binance", "metamask", "trust", "safepal"];
 
 interface CustomWalletButtonProps {
   ready: boolean;
@@ -19,7 +19,7 @@ interface CustomWalletButtonProps {
   };
 }
 
-const CustomWalletButton = ({
+export const CustomWalletButton = ({
   ready,
   connect,
   connector,
@@ -53,29 +53,13 @@ const CustomWalletButton = ({
   }, [connect, ready, isConnecting]);
 
   return (
-    <button
-      className={`w-full h-[72px] bg-muted hover:bg-brand-50 flex items-center rounded-xl justify-between pl-5 pr-4 py-4 ${
-        !ready || isConnecting
-          ? "opacity-50 cursor-not-allowed"
-          : "cursor-pointer"
-      }`}
-      onClick={handleConnect}
+    <WalletButton
       disabled={!ready || isConnecting}
-    >
-      <div className="flex items-center gap-4 flex-1">
-        {iconUrl && (
-          <img
-            src={iconUrl}
-            alt={connector.name}
-            className="w-10 h-10 rounded-full aspect-square"
-          />
-        )}
-        <span className="text-label-medium">
-          {isConnecting ? "Connecting..." : connector.name}
-        </span>
-      </div>
-      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-    </button>
+      iconUrl={iconUrl ?? ""}
+      connector={connector}
+      handleConnect={handleConnect}
+      isConnecting={isConnecting}
+    />
   );
 };
 

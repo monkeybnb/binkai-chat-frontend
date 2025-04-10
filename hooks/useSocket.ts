@@ -1,6 +1,5 @@
 import { socketService } from "@/services/socket";
 import { useCallback, useEffect, useState } from "react";
-
 export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -28,30 +27,29 @@ export const useSocket = () => {
   const connect = useCallback(
     async ({
       threadId,
-      address,
-      signMessageAsync,
-      sendTransaction,
+      evm,
+      solana,
     }: {
       threadId: string;
-      address: string;
-      signMessageAsync: any;
-      sendTransaction: any;
+      evm: {
+        address: string;
+        signMessageAsync: any;
+        signTransaction: any;
+      };
+      solana: {
+        address: string;
+        signMessageAsync: any;
+      };
     }) => {
-      if (!threadId || !address) {
-        console.log("Missing connection params:", { threadId, address });
+      if (!threadId || (!evm.address && !solana.address)) {
+        console.log("Missing connection params:", { threadId, evm, solana });
         return;
       }
 
       try {
         setIsConnecting(true);
 
-        await socketService.connect(threadId, {
-          evm: {
-            address,
-            signMessageAsync,
-            sendTransaction,
-          },
-        });
+        await socketService.connect(threadId, { evm, solana });
       } catch (error) {
         console.error("Socket connection failed:", error);
         setIsConnecting(false);

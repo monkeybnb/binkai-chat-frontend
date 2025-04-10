@@ -1,5 +1,6 @@
-import { Socket, io } from "socket.io-client";
-import { parseEther } from "viem";
+import { connection } from "@/screens/chat/components/right-sider";
+import { PublicKey, Transaction } from "@solana/web3.js";
+import { io, Socket } from "socket.io-client";
 
 interface MessageData {
   thread_id: string;
@@ -20,7 +21,9 @@ interface SignTransactionData {
   transaction: {
     to: `0x${string}`;
     value: string;
+    chainId: number;
   };
+  network: string;
 }
 
 interface WalletResponse {
@@ -34,12 +37,11 @@ interface WalletConfig {
   evm?: {
     address: string;
     signMessageAsync: (args: { message: string }) => Promise<string>;
-    sendTransaction: any;
+    signTransaction: any;
   };
   solana?: {
     address: string;
     signMessageAsync: (args: { message: string }) => Promise<string>;
-    sendTransaction: any;
   };
 }
 
@@ -53,6 +55,14 @@ class SocketService {
   private eventHandlers: { [key: string]: Function[] } = {};
 
   private constructor() {}
+
+  public updateWalletConfig(config: Partial<WalletConfig>) {
+    this.walletConfig = {
+      ...this.walletConfig,
+      ...config,
+    };
+    console.log("Wallet config updated:", this.walletConfig);
+  }
 
   public static getInstance(): SocketService {
     if (!SocketService.instance) {
@@ -160,12 +170,18 @@ class SocketService {
         callback: (response: WalletResponse) => void
       ) => {
         try {
-          console.log("get_address request:", this.walletConfig);
           if (!this.walletConfig) {
             throw new Error("Wallet not connected");
           }
           console.log("get_address request:", data);
-          callback({ address: this.walletConfig.evm?.address });
+          const address =
+            data.network === "solana"
+              ? this.walletConfig.solana?.address
+              : this.walletConfig.evm?.address;
+
+          console.log("address", address, this.walletConfig);
+
+          callback({ address });
         } catch (error) {
           console.error("Error getting address:", error);
           callback({
@@ -186,9 +202,14 @@ class SocketService {
             throw new Error("Wallet not connected");
           }
           console.log("sign_message request:", data);
-          const signature = await this.walletConfig.evm?.signMessageAsync({
-            message: data.message,
-          });
+          const signature =
+            data.network === "solana"
+              ? await this.walletConfig.solana?.signMessageAsync({
+                  message: data.message,
+                })
+              : await this.walletConfig.evm?.signMessageAsync({
+                  message: data.message,
+                });
           callback({ signature });
         } catch (error) {
           console.error("Error signing message:", error);
@@ -210,15 +231,26 @@ class SocketService {
             throw new Error("Wallet not connected");
           }
           console.log("sign_transaction request:", data);
+          let signedTransaction: string;
+          if (data.network === "solana") {
+            const transaction = new Transaction();
 
-          const signedTransaction =
-            await this.walletConfig.evm?.sendTransaction({
-              to: data.transaction.to,
-              value: parseEther(data.transaction.value),
-            });
+            transaction.recentBlockhash = (
+              await connection.getLatestBlockhash()
+            ).blockhash;
+            transaction.feePayer = new PublicKey(
+              this.walletConfig.solana?.address as string
+            );
 
+            const signedTx = await window.solana.signTransaction(transaction);
+
+            signedTransaction = signedTx.serialize().toString("base64");
+          } else {
+            signedTransaction = await this.walletConfig.evm?.signTransaction(
+              data.transaction
+            );
+          }
           console.log("signedTransaction", signedTransaction);
-
           callback({ signedTransaction });
         } catch (error) {
           console.error("Error signing transaction:", error);
