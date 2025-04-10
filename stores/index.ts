@@ -32,11 +32,6 @@ export interface Thread {
   messages: Message[];
 }
 
-interface PendingMessage {
-  message: string;
-  threadId: string;
-}
-
 interface ChatState {
   messages: Message[];
   threads: Thread[];

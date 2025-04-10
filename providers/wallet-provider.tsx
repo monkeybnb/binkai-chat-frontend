@@ -15,7 +15,6 @@ import {
   safepalWallet,
   trustWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
   WalletProvider as SolanaWalletProvider,
@@ -27,7 +26,7 @@ import {
   SolflareWalletAdapter,
   TorusWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
@@ -82,6 +81,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+const rpc = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "";
+
+export const connection = new Connection(rpc, "confirmed");
 
 export default function QueryClientProviderWrapper({
   children,
@@ -90,8 +92,6 @@ export default function QueryClientProviderWrapper({
 }) {
   const [mounted, setMounted] = useState(false);
 
-  const network = WalletAdapterNetwork.Devnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
@@ -110,7 +110,7 @@ export default function QueryClientProviderWrapper({
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectionProvider endpoint={endpoint}>
+        <ConnectionProvider endpoint={rpc}>
           <SolanaWalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
               <RainbowKitProvider modalSize="compact" theme={customTheme}>

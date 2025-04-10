@@ -17,10 +17,6 @@ import {
 } from "wagmi";
 import { Chain } from "wagmi/chains";
 import ConnectBaseWalletDialog from "./ConnectBaseWalletDialog";
-let rpc =
-  process.env.NEXT_PUBLIC_RPC_SOLANA_URL ||
-  "https://api.mainnet-beta.solana.com";
-export const connection = new Connection(rpc, "confirmed");
 
 export const BSCIcon =
   "https://s3-alpha-sig.figma.com/img/b092/31a9/0c06efc55ecafd0466d11cb0b941c09a?Expires=1744588800&Key-Pair-Id=APKAQ4GOSFWCW27IBOMQ&Signature=UVYdwK5FB3-Fg1bf2zxgZeOfeQGWyyAMhX4SiYtxUn-QvqNkwGUEeuKk8knLii0Pw54PNUmzYshpdQhgLqtKBTyfEGMRNOGZ3hzG1TZZ1tBaXYmuEA3P6m9o7hym18PAwJGH4bEX2trF-pmHtyerLM547uW7xbnEsLfro45SD-N9UDO2fsE4t7nKN9-lhsOoeZplWntGfPQxPGsj92qzQqWMOuPRR-1rF-xsC7FYmYhaDH9DcMUkRU4lMbqOhzAy2i9qv1NzYXVfcrE6agwfwOC07U7XXrzfZe29LFeoI8939VbAyoni0eV1NFZhK1p38jryLZgES5sqxILUpbWYZA__";
