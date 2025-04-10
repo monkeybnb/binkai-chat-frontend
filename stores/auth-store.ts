@@ -72,8 +72,6 @@ export const useAuthStore = create<AuthState>()(
 
           const newAccessToken = response.data?.access_token;
 
-          console.log("Login success!", newAccessToken);
-
           if (newAccessToken) {
             localStorage.setItem("access_token", newAccessToken);
             await get().fetchProfile();
@@ -104,7 +102,6 @@ export const useAuthStore = create<AuthState>()(
             currentPage: 1,
             messageHasMore: {},
             messageCurrentPage: {},
-            pendingMessage: null,
           });
           localStorage.clear();
         } catch (error) {

@@ -7,12 +7,9 @@ import {
 } from "@/services";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { useAuthStore } from "./auth-store";
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface Message {
   id: string;
@@ -50,7 +47,6 @@ interface ChatState {
   currentPage: number;
   messageHasMore: Record<string, boolean>;
   messageCurrentPage: Record<string, number>;
-  pendingMessage: PendingMessage | null;
   setLoading: (loading: boolean) => void;
   fetchThreads: (page?: number) => Promise<void>;
   fetchMoreThreads: () => Promise<void>;
@@ -68,7 +64,6 @@ interface ChatState {
   deleteMessage: (messageId: string) => void;
   clearThreadMessages: (threadId: string) => void;
   setThreads: (threads: Thread[]) => void;
-  setPendingMessage: (message: PendingMessage | null) => void;
   sendMessage: (params: {
     message: string;
     threadId: string | null;
@@ -89,8 +84,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   pendingMessage: null,
 
   setLoading: (loading) => set({ isLoading: loading }),
-
-  setPendingMessage: (message) => set({ pendingMessage: message }),
 
   fetchThreads: async (page = 1) => {
     try {
@@ -138,7 +131,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         take: 20,
       });
 
-      const messages = response.data;
+      const messages = response?.data || [];
       const hasMore = messages.length === 20;
 
       set((state) => {
@@ -183,7 +176,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   fetchMoreMessages: async (threadId) => {
     const state = get();
-    if (!state.messageHasMore[threadId] || state.isLoadingMore[threadId])
+    if (
+      !threadId ||
+      !state.messageHasMore[threadId] ||
+      state.isLoadingMore[threadId]
+    )
       return;
 
     const currentPage = state.messageCurrentPage[threadId] || 1;
@@ -200,7 +197,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         take: 20,
       });
 
-      const messages = response.data;
+      const messages = response?.data || [];
       const hasMore = messages.length === 20;
 
       if (messages.length === 0) {
@@ -274,7 +271,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         currentThreadId:
           state.currentThreadId === threadId ? null : state.currentThreadId,
       }));
-      toast.success("Thread deleted successfully");
     } catch (error) {
       console.error("Error deleting thread:", error);
       throw error;

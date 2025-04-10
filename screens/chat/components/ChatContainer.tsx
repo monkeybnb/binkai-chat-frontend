@@ -27,7 +27,7 @@ const HomeContent = ({
   isConnected: boolean;
 }) => {
   const [message, setMessage] = useState("");
-  const { createThread, setPendingMessage } = useChatStore();
+  const { createThread } = useChatStore();
   const { navigateToThread } = useThreadRouter();
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
@@ -38,7 +38,10 @@ const HomeContent = ({
       const threadId = await createThread(message);
       navigateToThread(threadId);
 
-      setPendingMessage({ message, threadId });
+      localStorage.setItem(
+        "pendingMessage",
+        JSON.stringify({ message, threadId })
+      );
 
       if (!isConnected && address && threadId) {
         connect({
@@ -91,8 +94,7 @@ const ChatContainer = () => {
   const { messagesStartRef, messagesEndRef, handleScroll, hideScroll } =
     useScroll({ status });
 
-  const { sendMessage, createThread, setPendingMessage, pendingMessage } =
-    useChatStore();
+  const { sendMessage, createThread } = useChatStore();
   const { navigateToThread } = useThreadRouter();
 
   useEffect(() => {
@@ -119,13 +121,18 @@ const ChatContainer = () => {
   }, [address, threadId, connect]);
 
   useEffect(() => {
-    if (isConnected && pendingMessage) {
-      sendMessage(pendingMessage);
-      setPendingMessage(null);
-      setMessage("");
-      setStatus("IDLE");
-    }
-  }, [isConnected, pendingMessage, sendMessage, setPendingMessage]);
+    const handleSendPendingMessage = async () => {
+      const pendingMessage = localStorage.getItem("pendingMessage");
+
+      if (isConnected && pendingMessage) {
+        localStorage.removeItem("pendingMessage");
+        await sendMessage(JSON.parse(pendingMessage));
+        setMessage("");
+        setStatus("IDLE");
+      }
+    };
+    handleSendPendingMessage();
+  }, [isConnected]);
 
   useEffect(() => {
     if (inView && hasMore && !isLoading && !isLoadingMore) {
@@ -141,7 +148,10 @@ const ChatContainer = () => {
         const threadId = await createThread(currentMessage);
         navigateToThread(threadId);
 
-        setPendingMessage({ message: currentMessage, threadId });
+        localStorage.setItem(
+          "pendingMessage",
+          JSON.stringify({ message: currentMessage, threadId })
+        );
       }
 
       sendMessage({ message: currentMessage, threadId: threadId });

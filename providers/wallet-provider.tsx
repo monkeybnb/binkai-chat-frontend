@@ -33,6 +33,46 @@ const customTheme = lightTheme({
   overlayBlur: "small",
 });
 
+// Initialize configurations outside component
+const recommendedWalletList: WalletList = [
+  {
+    groupName: "Recommended",
+    wallets: [
+      metaMaskWallet,
+      binanceWallet,
+      trustWallet,
+      safepalWallet,
+      injectedWallet,
+      phantomWallet,
+    ],
+  },
+];
+
+const connectors = connectorsForWallets(recommendedWalletList, {
+  projectId: WALLET_CONNECT_PROJECT_ID,
+  appName: APP_NAME,
+  appUrl: process.env.NEXT_PUBLIC_APP_URL || "https://bink.ai",
+});
+
+const config = createConfig({
+  ssr: true,
+  chains: [bsc],
+  connectors,
+  transports: {
+    [bsc.id]: http(),
+  },
+});
+
+// Initialize QueryClient outside component
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 export default function QueryClientProviderWrapper({
   children,
 }: {
@@ -43,48 +83,6 @@ export default function QueryClientProviderWrapper({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const recommendedWalletList: WalletList = [
-    {
-      groupName: "Recommended",
-      wallets: [
-        metaMaskWallet,
-        binanceWallet,
-        trustWallet,
-        safepalWallet,
-        injectedWallet,
-        phantomWallet,
-      ],
-    },
-  ];
-
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 0,
-        refetchOnWindowFocus: false,
-      },
-    },
-  });
-
-  const connectors = connectorsForWallets(recommendedWalletList, {
-    projectId: WALLET_CONNECT_PROJECT_ID,
-    appName: APP_NAME,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL || "https://bink.ai",
-  });
-
-  const config = createConfig({
-    ssr: true,
-    connectors,
-    chains: [bsc],
-    transports: {
-      [bsc.id]: http(),
-      // [base.id]: http(),
-      // [polygon.id]: http(),
-      // [tron.id]: http(),
-      // [mainnet.id]: http(),
-    },
-  });
 
   // Prevent hydration mismatch
   if (!mounted) return null;
