@@ -178,7 +178,7 @@ const ChatContainer = () => {
           ref={ref}
           onScroll={handleScroll}
         >
-          <div className="mb-auto max-w-[720px] w-full flex flex-col p-4">
+          <div className="mb-auto max-w-screen md:max-w-[720px] w-full flex flex-col p-4">
             {hasMore && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 {isLoading ? (

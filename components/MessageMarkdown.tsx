@@ -31,7 +31,7 @@ export const MessageMarkdown = ({ content }: MessageMarkdownProps) => {
             const language = match ? match[1] : "javascript";
 
             return !inline ? (
-              <div className="relative group rounded-xl overflow-hidden">
+              <div className="relative group rounded-xl overflow-hidden max-w-screen">
                 <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
                   <button
                     onClick={() => {
@@ -51,6 +51,7 @@ export const MessageMarkdown = ({ content }: MessageMarkdownProps) => {
                     margin: 0,
                     borderRadius: "12px",
                     background: "transparent",
+                    maxWidth: "80vw",
                   }}
                   wrapLongLines
                 >
