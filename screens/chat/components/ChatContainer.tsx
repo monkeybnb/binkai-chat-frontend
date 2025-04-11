@@ -2,6 +2,7 @@
 
 import { ArrowUp, Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useNetworkConnect } from "@/hooks/useNetworkConnect";
 import { useScroll } from "@/hooks/useScroll";
 import { useSocket } from "@/hooks/useSocket";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,8 @@ const ChatContainer = () => {
     useThreadMessages(threadId);
   const { address } = useAccount();
 
+  const { isConnectedEvm, connectedSolana } = useNetworkConnect();
+
   const { signMessageAsync: signMessageAsyncEvm } = useSignMessage();
   const { sendTransactionAsync: sendTransactionAsyncEvm } =
     useSendTransaction();
@@ -88,7 +91,7 @@ const ChatContainer = () => {
   const { sendMessage } = useChatStore();
 
   useEffect(() => {
-    if (!address || !threadId) {
+    if (!threadId || (!isConnectedEvm && !connectedSolana)) {
       return;
     }
 
@@ -111,7 +114,7 @@ const ChatContainer = () => {
     //     disconnect();
     //   }
     // };
-  }, [address, threadId, connect]);
+  }, [isConnectedEvm, connectedSolana, threadId, connect]);
 
   useEffect(() => {
     const handleSendPendingMessage = async () => {

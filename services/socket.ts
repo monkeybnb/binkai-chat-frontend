@@ -157,6 +157,27 @@ class SocketService {
     this.socket.emit("message", messageData);
   }
 
+  private checkNetworkAvailability(network: string): boolean {
+    if (!this.walletConfig) {
+      this.emit("network_unavailable", { network });
+      return false;
+    }
+
+    if (network === "solana") {
+      if (!this.walletConfig.solana?.address) {
+        this.emit("network_unavailable", { network });
+        return false;
+      }
+      return true;
+    } else {
+      if (!this.walletConfig.evm?.address) {
+        this.emit("network_unavailable", { network });
+        return false;
+      }
+      return true;
+    }
+  }
+
   private setupListeners(): void {
     if (!this.socket) return;
 
@@ -188,12 +209,19 @@ class SocketService {
             throw new Error("Wallet not connected");
           }
           console.log("get_address request:", data);
-          const address =
-            data.network === "solana"
-              ? this.walletConfig.solana?.address
-              : this.walletConfig.evm?.address;
 
-          console.log("address", address, this.walletConfig);
+          let address = "";
+          if (data.network === "solana") {
+            if (!this.checkNetworkAvailability("solana")) {
+              return callback({ error: "Network not available" });
+            }
+            address = this.walletConfig.solana?.address || "";
+          } else {
+            if (!this.checkNetworkAvailability(data.network)) {
+              return callback({ error: "Network not available" });
+            }
+            address = this.walletConfig.evm?.address || "";
+          }
 
           callback({ address });
         } catch (error) {
@@ -216,14 +244,28 @@ class SocketService {
             throw new Error("Wallet not connected");
           }
           console.log("sign_message request:", data);
-          const signature =
-            data.network === "solana"
-              ? await this.walletConfig.solana?.signMessageAsync({
-                  message: data.message,
-                })
-              : await this.walletConfig.evm?.signMessageAsync({
-                  message: data.message,
-                });
+
+          let signature: string | undefined;
+          if (data.network === "solana") {
+            if (!this.checkNetworkAvailability("solana")) {
+              return callback({ error: "Network not available" });
+            }
+            signature = await this.walletConfig.solana?.signMessageAsync({
+              message: data.message,
+            });
+          } else {
+            if (!this.checkNetworkAvailability(data.network)) {
+              return callback({ error: "Network not available" });
+            }
+            signature = await this.walletConfig.evm?.signMessageAsync({
+              message: data.message,
+            });
+          }
+
+          if (!signature) {
+            return callback({ error: "Failed to sign message" });
+          }
+
           callback({ signature });
         } catch (error) {
           console.error("Error signing message:", error);
@@ -293,6 +335,9 @@ class SocketService {
           if (data.network === "solana") {
             callback({ error: "Not supported" });
           } else {
+            if (!this.checkNetworkAvailability(data.network)) {
+              return callback({ error: "Network not available" });
+            }
             const tx = parseTransaction(data.transaction as `0x${string}`);
             const signedTx = await this.walletConfig.evm?.sendTransaction({
               to: tx.to as `0x${string}`,
@@ -327,9 +372,9 @@ class SocketService {
     return this.socket;
   }
 
-  private emit(event: string) {
+  private emit(event: string, params?: any) {
     if (this.eventHandlers[event]) {
-      this.eventHandlers[event].forEach((handler) => handler());
+      this.eventHandlers[event].forEach((handler) => handler(params));
     }
   }
 

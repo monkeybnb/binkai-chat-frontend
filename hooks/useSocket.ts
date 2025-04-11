@@ -1,5 +1,6 @@
 import { socketService } from "@/services/socket";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -15,12 +16,16 @@ export const useSocket = () => {
       setIsConnecting(false);
     };
 
-    socketService.on("connect", handleConnect);
-    socketService.on("disconnect", handleDisconnect);
+    const handleNetworkUnavailable = (params: { network: string }) => {
+      toast(`Please connect ${params.network} network`);
+    };
 
+    socketService.on("connect", handleConnect);
+    socketService.on("network_unavailable", handleNetworkUnavailable);
     return () => {
       socketService.off("connect", handleConnect);
       socketService.off("disconnect", handleDisconnect);
+      socketService.off("network_unavailable", handleNetworkUnavailable);
     };
   }, []);
 
