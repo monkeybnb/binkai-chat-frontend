@@ -21,7 +21,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
 }) => {
   const { isAuthenticated } = useAuthStore();
-  const { isLoading } = useChatStore();
+  const { isLoading, isSending } = useChatStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleChangeQuestion = (e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -30,6 +30,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const handleKeyDown = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
+    textareaRef.current?.focus();
+    if (isSending) return;
     if (event.ctrlKey && event.key === ENTER_KEY) {
       event.preventDefault();
       setMessage((prevMsg: string) => `${prevMsg}\n`);
@@ -84,8 +86,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
             className="aspect-square h-9 w-9 disabled:bg-muted disabled:text-muted-foreground"
             size="icon"
             variant="default"
-            onClick={onSendMessage}
-            disabled={!message.trim() || !isAuthenticated || isLoading}
+            onClick={() => {
+              onSendMessage();
+              textareaRef.current?.focus();
+            }}
+            disabled={!message.trim() || !isAuthenticated || isSending}
           >
             <ArrowUp />
           </Button>

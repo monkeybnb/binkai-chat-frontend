@@ -45,12 +45,14 @@ interface ChatState {
   threads: Thread[];
   currentThreadId: string | null;
   isLoading: boolean;
+  isSending: boolean;
   isLoadingMore: Record<string, boolean>;
   hasMore: boolean;
   currentPage: number;
   messageHasMore: Record<string, boolean>;
   messageCurrentPage: Record<string, number>;
   setLoading: (loading: boolean) => void;
+  setSending: (sending: boolean) => void;
   fetchThreads: (page?: number) => Promise<void>;
   fetchMoreThreads: () => Promise<void>;
   fetchThreadMessages: (params: {
@@ -90,6 +92,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   threads: [],
   currentThreadId: null,
   isLoading: false,
+  isSending: false,
   isLoadingMore: {},
   hasMore: true,
   currentPage: 1,
@@ -98,6 +101,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   pendingMessage: null,
 
   setLoading: (loading) => set({ isLoading: loading }),
+  setSending: (sending) => set({ isSending: sending }),
 
   fetchThreads: async (page = 1) => {
     try {
@@ -457,6 +461,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     let currentThreadId = threadId;
     try {
+      get().setSending(true);
       const userMessage: Message = {
         id: Date.now().toString(),
         content: message,
@@ -514,6 +519,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         });
       }
       return null;
+    } finally {
+      get().setSending(false);
     }
   },
 }));
