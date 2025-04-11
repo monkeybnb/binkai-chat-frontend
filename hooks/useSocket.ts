@@ -34,11 +34,12 @@ export const useSocket = () => {
       evm: {
         address: string;
         signMessageAsync: any;
-        signTransaction: any;
+        sendTransaction: any;
       };
       solana: {
         address: string;
         signMessageAsync: any;
+        // signTransaction: any;
       };
     }) => {
       if (!threadId || (!evm.address && !solana.address)) {

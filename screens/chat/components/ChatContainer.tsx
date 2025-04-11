@@ -15,12 +15,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import {
-  useAccount,
-  useSendTransaction,
-  useSignMessage,
-  useWalletClient,
-} from "wagmi";
+import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
 type Status = "IDLE" | "GENERATING";
@@ -71,13 +66,13 @@ const ChatContainer = () => {
   const { address } = useAccount();
 
   const { signMessageAsync: signMessageAsyncEvm } = useSignMessage();
-  const { sendTransaction: sendTransactionEvm } = useSendTransaction();
+  const { sendTransactionAsync: sendTransactionAsyncEvm } =
+    useSendTransaction();
   const { connect, isConnected } = useSocket();
-  const { data: walletClient } = useWalletClient();
 
   const {
     signMessage: signMessageAsyncSolana,
-    sendTransaction: sendTransactionSolana,
+    signTransaction: signTransactionSolana,
     publicKey: publicKeySolana,
   } = useWallet();
 
@@ -102,11 +97,12 @@ const ChatContainer = () => {
       evm: {
         address: address as string,
         signMessageAsync: signMessageAsyncEvm,
-        signTransaction: walletClient?.signTransaction,
+        sendTransaction: sendTransactionAsyncEvm,
       },
       solana: {
         address: publicKeySolana?.toBase58() as string,
         signMessageAsync: signMessageAsyncSolana,
+        // signTransaction: signTransactionSolana,
       },
     });
 

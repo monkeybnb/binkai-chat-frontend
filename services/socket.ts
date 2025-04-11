@@ -3,6 +3,7 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 import { io, Socket } from "socket.io-client";
+import { parseTransaction } from "viem";
 
 interface MessageData {
   thread_id: string;
@@ -35,15 +36,26 @@ interface WalletResponse {
   error?: string;
 }
 
+interface SendTransactionData {
+  transaction: string;
+  network: string;
+}
+
+interface SendTransactionResponse {
+  tx_hash?: string;
+  error?: string;
+}
+
 interface WalletConfig {
   evm?: {
     address: string;
     signMessageAsync: (args: { message: string }) => Promise<string>;
-    signTransaction: any;
+    sendTransaction: any;
   };
   solana?: {
     address: string;
     signMessageAsync: (args: { message: string }) => Promise<string>;
+    // signTransaction: (args: { transaction: string }) => Promise<string>;
   };
 }
 
@@ -233,7 +245,7 @@ class SocketService {
             throw new Error("Wallet not connected");
           }
           console.log("sign_transaction request:", data);
-          let signedTransaction: string;
+
           if (data.network === "solana") {
             let tx: SolanaTransaction | VersionedTransaction;
             try {
@@ -248,18 +260,52 @@ class SocketService {
 
             const signedTx = await window.solana.signTransaction(tx);
 
-            signedTransaction = Buffer.from(signedTx.serialize()).toString(
-              "base64"
-            );
+            const signedTransaction = Buffer.from(
+              signedTx.serialize()
+            ).toString("base64");
+
+            callback({ signedTransaction });
           } else {
-            signedTransaction = await this.walletConfig.evm?.signTransaction(
-              data.transaction
-            );
+            callback({ error: "Not supported" });
           }
-          console.log("signedTransaction", signedTransaction);
-          callback({ signedTransaction });
         } catch (error) {
           console.error("Error signing transaction:", error);
+          callback({
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      }
+    );
+
+    this.socket.on(
+      "send_transaction",
+      async (
+        data: SendTransactionData,
+        callback: (response: SendTransactionResponse) => void
+      ) => {
+        try {
+          if (!this.walletConfig) {
+            throw new Error("Wallet not connected");
+          }
+
+          console.log("send_transaction request:", data);
+
+          if (data.network === "solana") {
+            callback({ error: "Not supported" });
+          } else {
+            const tx = parseTransaction(data.transaction as `0x${string}`);
+            const signedTx = await this.walletConfig.evm?.sendTransaction({
+              to: tx.to as `0x${string}`,
+              value: tx.value as bigint,
+              data: tx.data as `0x${string}`,
+              gas: tx.gas as bigint,
+            });
+
+            console.log("signedTx", signedTx);
+            callback({ tx_hash: signedTx });
+          }
+        } catch (error) {
+          console.error("Error sending transaction:", error);
           callback({
             error: error instanceof Error ? error.message : "Unknown error",
           });

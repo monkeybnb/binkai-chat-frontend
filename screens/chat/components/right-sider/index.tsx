@@ -5,15 +5,14 @@ import { cn } from "@/lib/utils";
 import { socketService } from "@/services/socket";
 import { useAuthStore } from "@/stores/auth-store";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection } from "@solana/web3.js";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   useAccount,
   useDisconnect,
+  useSendTransaction,
   useSignMessage,
-  useWalletClient,
 } from "wagmi";
 import { Chain } from "wagmi/chains";
 import ConnectBaseWalletDialog from "./ConnectBaseWalletDialog";
@@ -107,7 +106,9 @@ export default function RightSider({
     signMessage: signMessageSolana,
   } = useWallet();
   const { signMessageAsync } = useSignMessage();
-  const { data: walletClient } = useWalletClient();
+  const { sendTransactionAsync: sendTransactionAsyncEvm } =
+    useSendTransaction();
+
   const [networkConnectState, setNetworkConnectState] = useState<{
     type: string;
     visible: boolean;
@@ -141,7 +142,7 @@ export default function RightSider({
         evm: {
           address: address ?? "",
           signMessageAsync,
-          signTransaction: walletClient?.signTransaction,
+          sendTransaction: sendTransactionAsyncEvm,
         },
       });
       setNetworkConnectState({
