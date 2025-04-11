@@ -2,6 +2,7 @@
 
 import { Edit, LogoText, Menu } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useViewWidth } from "@/hooks/useViewWidthHeight";
 import { useRouter } from "next/navigation";
 import UserBtn from "./UserBtn";
 
@@ -19,6 +20,8 @@ export function ChatHeader({
   setIsOpenRightSider,
 }: ChatHeaderProps) {
   const router = useRouter();
+  const viewWidth = useViewWidth();
+  const isMobile = viewWidth < 768;
 
   return (
     <header className="flex w-full items-center justify-between px-6 gap-4 h-[76px]">
@@ -33,18 +36,20 @@ export function ChatHeader({
             >
               <Menu />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="w-11 h-11 rounded-xl"
-              onClick={() => router.push("/")}
-            >
-              <Edit />
-            </Button>
+            {!isMobile && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="w-11 h-11 rounded-xl"
+                onClick={() => router.push("/")}
+              >
+                <Edit />
+              </Button>
+            )}
           </div>
         ) : null}
 
-        <LogoText />
+        <LogoText className="text-sm md:text-base" />
       </div>
 
       <div className="flex items-center gap-4">

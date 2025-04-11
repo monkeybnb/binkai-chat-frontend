@@ -66,7 +66,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           autoFocus
           ref={textareaRef}
           placeholder="Ask anything"
-          className="px-0 py-1.5 border-none min-h-[36px] max-h-[376px] resize-none custom-scrollbar leading-6 text-body-medium focus-visible:ring-transparent focus-visible:ring-0 caret-primary"
+          className="px-0 py-1.5 border-none min-h-[36px] max-h-[176px] md:max-h-[376px] resize-none custom-scrollbar leading-6 text-body-medium focus-visible:ring-transparent focus-visible:ring-0 caret-primary"
           value={message}
           onChange={handleChangeQuestion}
           onKeyDown={handleKeyDown}
