@@ -1,46 +1,37 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useLayoutStore } from "@/stores/layout-store";
 import ChatContainer from "./components/ChatContainer";
 import { ChatHeader } from "./components/chat-header";
-import ChatSidebar from "./components/chat-sider";
-import RightSidebar from "./components/right-sider";
+import ChatSider from "./components/chat-sider";
+import RightSider from "./components/right-sider";
 
-const Chat = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isOpenRightSider, setIsOpenRightSider] = useState(false);
-  useEffect(() => {
-    const sidebarState = localStorage.getItem("sidebarState");
-    if (sidebarState) {
-      setIsSidebarOpen(JSON.parse(sidebarState));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("sidebarState", JSON.stringify(isSidebarOpen));
-  }, [isSidebarOpen]);
+export default function ChatScreen() {
+  const {
+    isSidebarOpen,
+    isOpenRightSider,
+    setIsSidebarOpen,
+    setIsOpenRightSider,
+  } = useLayoutStore();
 
   return (
-    <div className="flex w-screen overflow-hidden h-screen">
-      <ChatSidebar
+    <div className="flex h-screen">
+      <ChatSider
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
       />
-      <div className="relative flex h-screen overflow-hidden flex-col flex-1">
+      <div className="flex-1 flex flex-col relative">
         <ChatHeader
           isSidebarOpen={isSidebarOpen}
+          isOpenRightSider={isOpenRightSider}
           setIsSidebarOpen={setIsSidebarOpen}
           setIsOpenRightSider={setIsOpenRightSider}
         />
-        <main className="flex-1 flex flex-col overflow-hidden relative px-6 pt-6">
-          <ChatContainer />
-        </main>
+        <ChatContainer />
       </div>
-      <RightSidebar
+      <RightSider
         isOpenRightSider={isOpenRightSider}
         setIsOpenRightSider={setIsOpenRightSider}
       />
     </div>
   );
-};
-
-export default Chat;
+}

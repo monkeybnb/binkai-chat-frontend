@@ -1,28 +1,26 @@
 import {
   createThread,
-  getStreamMessage,
+  deleteThread,
   getThread,
   getThreadMessages,
+  sendChat,
 } from "@/services";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { useAuthStore } from "./auth-store";
 
 export interface Message {
   id: string;
   content: string;
-  role: "user" | "assistant";
-  createdAt: string;
-  threadId: string;
+  is_ai: boolean;
+  created_at: string;
+  thread_id: string;
   isLoading?: boolean;
   error?: string;
-  attachments?: Array<{
-    type: string;
-    url: string;
-    id?: string;
-  }>;
+  parent_id?: string;
+  user_id?: string;
 }
 
 export interface Thread {
@@ -35,9 +33,11 @@ export interface Thread {
 }
 
 interface ChatState {
+  messages: Message[];
   threads: Thread[];
   currentThreadId: string | null;
   isLoading: boolean;
+  isLoadingMore: Record<string, boolean>;
   hasMore: boolean;
   currentPage: number;
   messageHasMore: Record<string, boolean>;
@@ -62,296 +62,385 @@ interface ChatState {
   sendMessage: (params: {
     message: string;
     threadId: string | null;
-    setStatus: (status: "IDLE" | "GENERATING") => void;
-    setMessage: (message: string) => void;
   }) => Promise<string | null>;
+  createThread: (message: string) => Promise<string>;
 }
 
-export const useChatStore = create<ChatState>()(
-  persist(
-    (set, get) => ({
-      threads: [],
-      currentThreadId: null,
-      isLoading: false,
-      hasMore: true,
-      currentPage: 1,
-      messageHasMore: {},
-      messageCurrentPage: {},
+export const useChatStore = create<ChatState>()((set, get) => ({
+  messages: [],
+  threads: [],
+  currentThreadId: null,
+  isLoading: false,
+  isLoadingMore: {},
+  hasMore: true,
+  currentPage: 1,
+  messageHasMore: {},
+  messageCurrentPage: {},
+  pendingMessage: null,
 
-      setLoading: (loading) => set({ isLoading: loading }),
+  setLoading: (loading) => set({ isLoading: loading }),
 
-      fetchThreads: async (page = 1) => {
-        try {
-          set({ isLoading: true });
-          const response = await getThread({ page, take: 10 });
-          if (page === 1) {
-            set({
-              threads: response.data,
-              currentPage: 1,
-              hasMore: response.data.length === 10,
-            });
-          } else {
-            set((state) => ({
-              threads: [...state.threads, ...response.data],
-              hasMore: response.data.length === 10,
-            }));
-          }
-        } catch (error) {
-          console.error("Error fetching threads:", error);
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      fetchMoreThreads: async () => {
-        const state = get();
-        if (!state.hasMore || state.isLoading) return;
-
-        const nextPage = state.currentPage + 1;
-        await state.fetchThreads(nextPage);
-        set({ currentPage: nextPage });
-      },
-
-      fetchThreadMessages: async ({ threadId, page = 1 }) => {
-        if (!threadId) return;
-
-        try {
-          set({ isLoading: true });
-          const response = await getThreadMessages({
-            id: threadId,
-            page,
-            take: 10,
-          });
-
-          set((state) => {
-            const thread = state.threads.find((t) => t.id === threadId);
-            const messages = response.data;
-
-            return {
-              threads: state.threads.map((t) =>
-                t.id === threadId
-                  ? {
-                      ...t,
-                      messages:
-                        page === 1
-                          ? messages
-                          : [...messages, ...(thread?.messages || [])],
-                    }
-                  : t
-              ),
-              messageHasMore: {
-                ...state.messageHasMore,
-                [threadId]: messages.length === 10,
-              },
-              messageCurrentPage: {
-                ...state.messageCurrentPage,
-                [threadId]: page,
-              },
-            };
-          });
-        } catch (error) {
-          console.error("Error fetching thread messages:", error);
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      fetchMoreMessages: async (threadId) => {
-        const state = get();
-        if (!state.messageHasMore[threadId] || state.isLoading) return;
-
-        const currentPage = state.messageCurrentPage[threadId] || 1;
-        const nextPage = currentPage + 1;
-        await state.fetchThreadMessages({
-          threadId,
-          page: nextPage,
+  fetchThreads: async (page = 1) => {
+    try {
+      const response = await getThread({ page, take: 20 });
+      if (page === 1) {
+        set({
+          threads: response.data,
+          currentPage: 1,
+          hasMore: response.data.length === 20,
         });
-      },
-
-      setThreads: (threads) => set({ threads }),
-      setCurrentThread: (threadId) => set({ currentThreadId: threadId }),
-      addThread: (thread) =>
+      } else {
         set((state) => ({
-          threads: [
-            {
+          threads: [...state.threads, ...response.data],
+          hasMore: response.data.length === 20,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching threads:", error);
+    }
+  },
+
+  fetchMoreThreads: async () => {
+    const state = get();
+    if (!state.hasMore || state.isLoading) return;
+
+    const nextPage = state.currentPage + 1;
+    await state.fetchThreads(nextPage);
+    set({ currentPage: nextPage });
+  },
+
+  fetchThreadMessages: async ({ threadId, page = 1 }) => {
+    if (!threadId) return;
+
+    try {
+      if (page === 1) {
+        set({ isLoading: true });
+      } else {
+        set((state) => ({
+          isLoadingMore: { ...state.isLoadingMore, [threadId]: true },
+        }));
+      }
+      const response = await getThreadMessages({
+        id: threadId,
+        page,
+        take: 20,
+      });
+
+      const messages = response?.data || [];
+      const hasMore = messages.length === 20;
+
+      set((state) => {
+        const thread = state.threads.find((t) => t.id === threadId);
+        const existingMessages = thread?.messages || [];
+
+        // If it's page 1 or no existing messages, just use new messages
+        const updatedMessages =
+          page === 1 ? messages : [...existingMessages, ...messages];
+
+        return {
+          threads: state.threads.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: updatedMessages,
+                }
+              : t
+          ),
+          messageHasMore: {
+            ...state.messageHasMore,
+            [threadId]: hasMore,
+          },
+          messageCurrentPage: {
+            ...state.messageCurrentPage,
+            [threadId]: hasMore ? page : state.messageCurrentPage[threadId],
+          },
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching thread messages:", error);
+    } finally {
+      if (page === 1) {
+        set({ isLoading: false });
+      } else {
+        set((state) => ({
+          isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+        }));
+      }
+    }
+  },
+
+  fetchMoreMessages: async (threadId) => {
+    const state = get();
+    if (
+      !threadId ||
+      !state.messageHasMore[threadId] ||
+      state.isLoadingMore[threadId]
+    )
+      return;
+
+    const currentPage = state.messageCurrentPage[threadId] || 1;
+    const nextPage = currentPage + 1;
+
+    try {
+      set((state) => ({
+        isLoadingMore: { ...state.isLoadingMore, [threadId]: true },
+      }));
+
+      const response = await getThreadMessages({
+        id: threadId,
+        page: nextPage,
+        take: 20,
+      });
+
+      const messages = response?.data || [];
+      const hasMore = messages.length === 20;
+
+      if (messages.length === 0) {
+        set((state) => ({
+          messageHasMore: {
+            ...state.messageHasMore,
+            [threadId]: false,
+          },
+          isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+        }));
+        return;
+      }
+
+      set((state) => {
+        const thread = state.threads.find((t) => t.id === threadId);
+        const existingMessages = thread?.messages || [];
+
+        return {
+          threads: state.threads.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: [...existingMessages, ...messages],
+                }
+              : t
+          ),
+          messageHasMore: {
+            ...state.messageHasMore,
+            [threadId]: hasMore,
+          },
+          messageCurrentPage: {
+            ...state.messageCurrentPage,
+            [threadId]: nextPage,
+          },
+          isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching more messages:", error);
+      set((state) => ({
+        isLoadingMore: { ...state.isLoadingMore, [threadId]: false },
+      }));
+    }
+  },
+
+  setThreads: (threads) => set({ threads }),
+  setCurrentThread: (threadId) => set({ currentThreadId: threadId }),
+  addThread: (thread) =>
+    set((state) => ({
+      threads: [{ ...thread, messages: [] }, ...state.threads],
+      currentThreadId: thread.id,
+    })),
+
+  updateThread: (threadId, updates) =>
+    set((state) => ({
+      threads: state.threads.map((thread) =>
+        thread.id === threadId
+          ? { ...thread, ...updates, updatedAt: new Date().toISOString() }
+          : thread
+      ),
+    })),
+
+  deleteThread: async (threadId: string) => {
+    try {
+      const { error }: any = await deleteThread(threadId);
+      if (error) {
+        throw new Error(error);
+      }
+      set((state) => ({
+        threads: state.threads.filter((thread) => thread.id !== threadId),
+        currentThreadId:
+          state.currentThreadId === threadId ? null : state.currentThreadId,
+      }));
+    } catch (error) {
+      console.error("Error deleting thread:", error);
+      throw error;
+    }
+  },
+
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [...state.messages, message],
+      threads: state.threads.map((thread) =>
+        thread.id === message.thread_id
+          ? {
+              ...thread,
+              messages: [...(thread?.messages || []), message],
+              updated_at: new Date().toISOString(),
+            }
+          : thread
+      ),
+    })),
+
+  updateMessage: (messageId, updates) =>
+    set((state) => ({
+      threads: state.threads.map((thread) => ({
+        ...thread,
+        messages: thread.messages?.map((message) =>
+          message.id === messageId ? { ...message, ...updates } : message
+        ),
+        updated_at: thread.messages?.some((m) => m.id === messageId)
+          ? new Date().toISOString()
+          : thread.updated_at,
+      })),
+    })),
+
+  deleteMessage: (messageId) =>
+    set((state) => ({
+      threads: state.threads.map((thread) => ({
+        ...thread,
+        messages: thread.messages.filter((message) => message.id !== messageId),
+        updated_at: thread.messages.some((m) => m.id === messageId)
+          ? new Date().toISOString()
+          : thread.updated_at,
+      })),
+    })),
+
+  clearThreadMessages: (threadId) =>
+    set((state) => ({
+      threads: state.threads.map((thread) =>
+        thread.id === threadId
+          ? {
               ...thread,
               messages: [],
-            },
-            ...state.threads,
-          ],
-          currentThreadId: thread.id,
-        })),
+              updatedAt: new Date().toISOString(),
+            }
+          : thread
+      ),
+    })),
 
-      updateThread: (threadId, updates) =>
-        set((state) => ({
-          threads: state.threads.map((thread) =>
-            thread.id === threadId
-              ? { ...thread, ...updates, updatedAt: new Date().toISOString() }
-              : thread
-          ),
-        })),
+  createThread: async (message: string) => {
+    try {
+      const newThread: any = await createThread({
+        title: message
+          ? message.slice(0, 50) + (message.length > 50 ? "..." : "")
+          : "New Chat",
+      });
 
-      deleteThread: (threadId) =>
-        set((state) => ({
-          threads: state.threads.filter((thread) => thread.id !== threadId),
-          currentThreadId:
-            state.currentThreadId === threadId ? null : state.currentThreadId,
-        })),
+      const thread: Thread = {
+        id: newThread.id,
+        title: newThread.title,
+        created_at: newThread.created_at,
+        updated_at: newThread.updated_at,
+        user_id: newThread.user_id,
+        messages: [],
+      };
 
-      addMessage: (message) =>
-        set((state) => ({
-          threads: state.threads.map((thread) =>
-            thread.id === message.threadId
-              ? {
-                  ...thread,
-                  messages: [...(thread?.messages || []), message],
-                  updated_at: new Date().toISOString(),
-                }
-              : thread
-          ),
-        })),
-
-      updateMessage: (messageId, updates) =>
-        set((state) => ({
-          threads: state.threads.map((thread) => ({
-            ...thread,
-            messages: thread.messages.map((message) =>
-              message.id === messageId ? { ...message, ...updates } : message
-            ),
-            updated_at: thread.messages.some((m) => m.id === messageId)
-              ? new Date().toISOString()
-              : thread.updated_at,
-          })),
-        })),
-
-      deleteMessage: (messageId) =>
-        set((state) => ({
-          threads: state.threads.map((thread) => ({
-            ...thread,
-            messages: thread.messages.filter(
-              (message) => message.id !== messageId
-            ),
-            updated_at: thread.messages.some((m) => m.id === messageId)
-              ? new Date().toISOString()
-              : thread.updated_at,
-          })),
-        })),
-
-      clearThreadMessages: (threadId) =>
-        set((state) => ({
-          threads: state.threads.map((thread) =>
-            thread.id === threadId
-              ? {
-                  ...thread,
-                  messages: [],
-                  updatedAt: new Date().toISOString(),
-                }
-              : thread
-          ),
-        })),
-
-      sendMessage: async ({ message, threadId, setStatus, setMessage }) => {
-        if (!message.trim()) return null;
-
-        let currentThreadId = threadId;
-        try {
-          setStatus("GENERATING");
-
-          if (!currentThreadId) {
-            const newThread: any = await createThread({
-              title: message.slice(0, 50) + (message.length > 50 ? "..." : ""),
-            });
-
-            const thread: Thread = {
-              id: newThread.id,
-              title: newThread.title,
-              created_at: newThread.created_at,
-              updated_at: newThread.updated_at,
-              user_id: newThread.user_id,
-              messages: [],
-            };
-
-            get().addThread(thread);
-            currentThreadId = newThread.id;
-          }
-
-          const userMessage: Message = {
-            id: Date.now().toString(),
-            content: message,
-            role: "user",
-            createdAt: new Date().toISOString(),
-            threadId: currentThreadId as string,
-          };
-          get().addMessage(userMessage);
-          setMessage("");
-
-          const response: any = await getStreamMessage({
-            thread_id: currentThreadId as string,
-            question: message,
-          });
-
-          if (response.includes("error")) {
-            get().addMessage({
-              id: (Date.now() + 1).toString(),
-              content: "",
-              role: "assistant",
-              createdAt: new Date().toISOString(),
-              threadId: currentThreadId as string,
-              error:
-                "An error occurred while generating the response. Please try again.",
-            });
-            return currentThreadId;
-          }
-
-          const reader = response.data.getReader();
-          const decoder = new TextDecoder();
-          let content = "";
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            content += chunk;
-          }
-
-          get().addMessage({
-            id: (Date.now() + 1).toString(),
-            content,
-            role: "assistant",
-            createdAt: new Date().toISOString(),
-            threadId: currentThreadId as string,
-          });
-
-          return currentThreadId;
-        } catch (error) {
-          console.error("Error sending message:", error);
-          if (currentThreadId) {
-            get().addMessage({
-              id: (Date.now() + 1).toString(),
-              content: "",
-              role: "assistant",
-              createdAt: new Date().toISOString(),
-              threadId: currentThreadId as string,
-              error: "Failed to send message. Please try again.",
-            });
-          }
-          return null;
-        } finally {
-          setStatus("IDLE");
-        }
-      },
-    }),
-    {
-      name: "chat-storage",
-      partialize: (state) => ({
-        threads: state.threads,
-      }),
+      get().addThread(thread);
+      return thread.id;
+    } catch (error) {
+      console.error("Error creating thread:", error);
+      throw error;
     }
-  )
-);
+  },
 
-export const useThreads = () => {
+  sendMessage: async ({ message, threadId }) => {
+    if (!message.trim()) return null;
+    const tempMsgUid = uuidv4();
+
+    let currentThreadId = threadId;
+    try {
+      // if (!currentThreadId) {
+      //   currentThreadId = await get().createThread(message);
+      // }
+
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content: message,
+        is_ai: false,
+        created_at: new Date().toISOString(),
+        thread_id: currentThreadId as string,
+      };
+      get().addMessage(userMessage);
+
+      const tempMessage: Message = {
+        id: tempMsgUid,
+        content: "",
+        is_ai: true,
+        created_at: new Date().toISOString(),
+        thread_id: currentThreadId as string,
+        isLoading: true,
+      };
+
+      get().addMessage(tempMessage);
+
+      const response: any = await sendChat({
+        threadId: currentThreadId as string,
+        message,
+      });
+
+      // const response: any = await getStreamMessage({
+      //   thread_id: currentThreadId as string,
+      //   question: message,
+      // });
+
+      if (response?.error) {
+        get().updateMessage(tempMsgUid, {
+          isLoading: false,
+          is_ai: true,
+          error:
+            "An error occurred while generating the response. Please try again.",
+        });
+        return currentThreadId;
+      }
+
+      // const reader = response.data.getReader();
+      // const decoder = new TextDecoder();
+      // let content = "";
+
+      // while (true) {
+      //   const { done, value } = await reader.read();
+      //   if (done) break;
+
+      //   const chunk = decoder.decode(value);
+      //   content += chunk;
+      // }
+      console.log(response, "response");
+      get().updateMessage(tempMsgUid, {
+        content: response.response,
+        is_ai: true,
+        created_at: new Date().toISOString(),
+        thread_id: currentThreadId as string,
+        isLoading: false,
+      });
+
+      return currentThreadId;
+    } catch (error) {
+      console.error("Error sending message:", error);
+      if (currentThreadId) {
+        get().updateMessage(tempMsgUid, {
+          isLoading: false,
+          is_ai: true,
+          error: "Failed to send message. Please try again.",
+        });
+      }
+      return null;
+    }
+  },
+}));
+
+interface ThreadsHookReturn {
+  threads: Thread[];
+  isLoading: boolean;
+  hasMore: boolean;
+  fetchMoreThreads: () => Promise<void>;
+}
+
+export const useThreads = (): ThreadsHookReturn => {
   const { threads, isLoading, hasMore, fetchThreads, fetchMoreThreads } =
     useChatStore();
   const { isAuthenticated } = useAuthStore();
@@ -376,24 +465,23 @@ export const useThreadMessages = (threadId: string) => {
   const {
     threads,
     isLoading,
+    isLoadingMore,
     messageHasMore,
     fetchThreadMessages,
     fetchMoreMessages,
   } = useChatStore();
-  const { isAuthenticated } = useAuthStore();
   const thread = threads.find((t) => t.id === threadId);
 
   useEffect(() => {
-    console.log(threadId, isAuthenticated);
-
-    if (threadId && isAuthenticated) {
+    if (threadId) {
       fetchThreadMessages({ threadId, page: 1 });
     }
-  }, [threadId, isAuthenticated, fetchThreadMessages]);
+  }, [threadId, fetchThreadMessages]);
 
   return {
     messages: thread?.messages || [],
     isLoading,
+    isLoadingMore: isLoadingMore[threadId] || false,
     hasMore: messageHasMore[threadId] || false,
     fetchMore: () => fetchMoreMessages(threadId),
   };

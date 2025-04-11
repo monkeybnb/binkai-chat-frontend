@@ -2,7 +2,9 @@
 
 import { ArrowUp, Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useNetworkConnect } from "@/hooks/useNetworkConnect";
 import { useScroll } from "@/hooks/useScroll";
+import { useSocket } from "@/hooks/useSocket";
 import { cn } from "@/lib/utils";
 import {
   Message as MessageType,
@@ -10,29 +12,34 @@ import {
   useThreadMessages,
   useThreadRouter,
 } from "@/stores";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useInView } from "react-intersection-observer";
+import { useAccount, useSendTransaction, useSignMessage } from "wagmi";
 import { Message } from "./Message";
 import MessageInput from "./MessageInput";
 type Status = "IDLE" | "GENERATING";
 
 const HomeContent = () => {
   const [message, setMessage] = useState("");
-  const { sendMessage } = useChatStore();
+  const { createThread } = useChatStore();
   const { navigateToThread } = useThreadRouter();
 
   const handleSendMessage = async () => {
-    const threadId = await sendMessage({
-      message,
-      threadId: null,
-      setStatus: () => {},
-      setMessage,
-    });
-
-    if (threadId) {
+    try {
+      const threadId = await createThread(message);
       navigateToThread(threadId);
+
+      localStorage.setItem(
+        "pendingMessage",
+        JSON.stringify({ message, threadId })
+      );
+    } catch (error) {
+      console.error("Error in message flow:", error);
     }
   };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden max-w-[720px] mx-auto w-full items-center justify-center gap-8 pb-6">
       <Logo className="w-[210px] h-[210px]" />
@@ -53,58 +60,96 @@ const HomeContent = () => {
 const ChatContainer = () => {
   const searchParams = useSearchParams();
   const threadId = searchParams.get("threadId") as string;
-
-  const { messages, isLoading, hasMore, fetchMore } =
-    useThreadMessages(threadId);
   const [message, setMessage] = useState("");
-
   const [status, setStatus] = useState<Status>("IDLE");
+  const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
+    useThreadMessages(threadId);
+  const { address } = useAccount();
+
+  const { isConnectedEvm, connectedSolana } = useNetworkConnect();
+
+  const { signMessageAsync: signMessageAsyncEvm } = useSignMessage();
+  const { sendTransactionAsync: sendTransactionAsyncEvm } =
+    useSendTransaction();
+  const { connect, isConnected } = useSocket();
+
+  const {
+    signMessage: signMessageAsyncSolana,
+    signTransaction: signTransactionSolana,
+    publicKey: publicKeySolana,
+  } = useWallet();
+
   const ref = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef<HTMLDivElement>(null);
+  const { ref: loadingRef, inView } = useInView({
+    root: ref.current,
+    threshold: 0.1,
+    rootMargin: "100px",
+  });
   const { messagesStartRef, messagesEndRef, handleScroll, hideScroll } =
     useScroll({ status });
 
   const { sendMessage } = useChatStore();
-  const { navigateToThread } = useThreadRouter();
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const target = entries[0];
-        if (target.isIntersecting && hasMore && !isLoading) {
-          fetchMore();
-        }
-      },
-      {
-        root: ref.current,
-        threshold: 0.1,
-      }
-    );
-
-    if (loadingRef.current) {
-      observer.observe(loadingRef.current);
+    if (!threadId || (!isConnectedEvm && !connectedSolana)) {
+      return;
     }
 
-    return () => observer.disconnect();
-  }, [hasMore, isLoading, fetchMore]);
-
-  const handleSendMessage = async () => {
-    setMessage("");
-    const threadId = await sendMessage({
-      message,
-      threadId: searchParams.get("threadId"),
-      setMessage,
-      setStatus,
+    connect({
+      threadId,
+      evm: {
+        address: address as string,
+        signMessageAsync: signMessageAsyncEvm,
+        sendTransaction: sendTransactionAsyncEvm,
+      },
+      solana: {
+        address: publicKeySolana?.toBase58() as string,
+        signMessageAsync: signMessageAsyncSolana,
+        // signTransaction: signTransactionSolana,
+      },
     });
 
-    if (threadId) {
-      navigateToThread(threadId);
+    // return () => {
+    //   if (isConnected) {
+    //     disconnect();
+    //   }
+    // };
+  }, [isConnectedEvm, connectedSolana, threadId, connect]);
+
+  useEffect(() => {
+    const handleSendPendingMessage = async () => {
+      const pendingMessage = localStorage.getItem("pendingMessage");
+
+      if (isConnected && pendingMessage) {
+        localStorage.removeItem("pendingMessage");
+        await sendMessage(JSON.parse(pendingMessage));
+        setMessage("");
+        setStatus("IDLE");
+      }
+    };
+    handleSendPendingMessage();
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (inView && hasMore && !isLoading && !isLoadingMore) {
+      fetchMore();
+    }
+  }, [inView, hasMore, isLoading, isLoadingMore, fetchMore]);
+
+  const handleSendMessage = async () => {
+    const currentMessage = message;
+    setMessage("");
+    try {
+      sendMessage({ message: currentMessage, threadId: threadId });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setStatus("IDLE");
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 w-full max-w-[720px] mx-auto">
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex gap-4 animate-pulse">
             <div className="w-10 h-10 bg-muted rounded-full" />
@@ -123,14 +168,14 @@ const ChatContainer = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden max-w-[720px] mx-auto w-full">
+    <div className="flex-1 flex flex-col overflow-hidden w-full">
       <div className="w-full flex flex-col overflow-hidden h-full relative">
         <div
-          className="overflow-auto flex flex-col-reverse w-full p-4 custom-scrollbar"
+          className="overflow-auto mx-auto flex flex-col-reverse items-center w-full custom-scrollbar px-6"
           ref={ref}
           onScroll={handleScroll}
         >
-          <div className="mb-auto w-full flex flex-col">
+          <div className="mb-auto max-w-[720px] w-full flex flex-col p-4">
             {hasMore && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 {isLoading ? (
@@ -145,9 +190,19 @@ const ChatContainer = () => {
               </div>
             )}
             <div ref={messagesStartRef} />
-            {messages?.map((message: MessageType, index: number) => (
-              <Message key={message.id} msg={message} index={index} />
-            ))}
+            {messages
+              ?.filter(
+                (message, index, self) =>
+                  index === self.findIndex((m) => m.id === message.id)
+              )
+              ?.sort(
+                (a, b) =>
+                  new Date(a.created_at).getTime() -
+                  new Date(b.created_at).getTime()
+              )
+              .map((message: MessageType, index: number) => (
+                <Message key={message.id} msg={message} index={index} />
+              ))}
             {!messages?.length && (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 No messages yet. Start a conversation!

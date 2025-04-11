@@ -63,7 +63,7 @@ class ApiClient {
 
         switch (resError?.status) {
           case 401:
-            handlePushToLogin();
+            // handlePushToLogin();
             return errorCallback(401, dataError);
           default:
             return errorCallback(400, dataError);

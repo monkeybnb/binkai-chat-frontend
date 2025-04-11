@@ -12,18 +12,30 @@ import {
   injectedWallet,
   metaMaskWallet,
   phantomWallet,
-  safeWallet,
+  safepalWallet,
   trustWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import {
+  ConnectionProvider,
+  WalletProvider as SolanaWalletProvider,
+} from "@solana/wallet-adapter-react";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TorusWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+import { Connection } from "@solana/web3.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { bsc } from "wagmi/chains";
 
-const WALLET_CONNECT_PROJECT_ID = "xxxxxxxxxx";
-const APP_NAME = "xxx";
+const WALLET_CONNECT_PROJECT_ID =
+  process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "xxx";
+const APP_NAME = "BINK AI";
 
-// Custom theme configuration
 const customTheme = lightTheme({
   accentColor: "var(--background)",
   accentColorForeground: "var(--foreground)",
@@ -32,6 +44,47 @@ const customTheme = lightTheme({
   overlayBlur: "small",
 });
 
+const recommendedWalletList: WalletList = [
+  {
+    groupName: "Recommended",
+    wallets: [
+      metaMaskWallet,
+      binanceWallet,
+      trustWallet,
+      safepalWallet,
+      injectedWallet,
+      phantomWallet,
+    ],
+  },
+];
+
+const connectors = connectorsForWallets(recommendedWalletList, {
+  projectId: WALLET_CONNECT_PROJECT_ID,
+  appName: APP_NAME,
+  appUrl: process.env.NEXT_PUBLIC_APP_URL || "https://bink.ai",
+});
+
+const config = createConfig({
+  ssr: true,
+  chains: [bsc],
+  connectors,
+  transports: {
+    [bsc.id]: http(),
+  },
+});
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+const rpc = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "";
+
+export const connection = new Connection(rpc, "confirmed");
+
 export default function QueryClientProviderWrapper({
   children,
 }: {
@@ -39,54 +92,33 @@ export default function QueryClientProviderWrapper({
 }) {
   const [mounted, setMounted] = useState(false);
 
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new TorusWalletAdapter(),
+    ],
+    []
+  );
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const recommendedWalletList: WalletList = [
-    {
-      groupName: "Recommended",
-      wallets: [
-        metaMaskWallet,
-        binanceWallet,
-        trustWallet,
-        safeWallet,
-        injectedWallet,
-        phantomWallet,
-      ],
-    },
-  ];
-
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 0,
-        refetchOnWindowFocus: false,
-      },
-    },
-  });
-
-  const connectors = connectorsForWallets(recommendedWalletList, {
-    projectId: WALLET_CONNECT_PROJECT_ID,
-    appName: APP_NAME,
-  });
-
-  const config = createConfig({
-    ssr: true,
-    connectors,
-    chains: [bsc],
-    transports: {
-      [bsc.id]: http(),
-    },
-  });
-
-  // Prevent hydration mismatch
   if (!mounted) return null;
 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={customTheme}>{children}</RainbowKitProvider>
+        <ConnectionProvider endpoint={rpc}>
+          <SolanaWalletProvider wallets={wallets} autoConnect>
+            <WalletModalProvider>
+              <RainbowKitProvider modalSize="compact" theme={customTheme}>
+                {children}
+              </RainbowKitProvider>
+            </WalletModalProvider>
+          </SolanaWalletProvider>
+        </ConnectionProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
