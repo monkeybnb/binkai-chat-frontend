@@ -2,6 +2,7 @@
 import SocialLink from "@/components/common/SocialLink";
 import { Edit, Menu, Search } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useViewWidth } from "@/hooks/useViewWidthHeight";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { ChannelList } from "./ChannelList";
@@ -13,13 +14,15 @@ interface ChatSiderProps {
 
 const ChatSidebar = ({ isSidebarOpen, setIsSidebarOpen }: ChatSiderProps) => {
   const router = useRouter();
-
+  const viewWidth = useViewWidth();
+  const isTabletScreen = viewWidth < 1024;
   return (
     <div
       className={cn(
         "flex flex-col w-[300px] h-screen overflow-hidden border-r border-border transition-all duration-300",
         {
           "w-[0px]": !isSidebarOpen,
+          "absolute left-0 z-10 bg-background": isTabletScreen,
         }
       )}
     >

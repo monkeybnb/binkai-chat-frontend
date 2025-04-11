@@ -112,7 +112,7 @@ const Onboarding = () => {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col items-center justify-center relative bg-background">
       <div className="absolute top-0 left-0 w-screen overflow-hidden">
-        <GridBackground className="w-full h-full" />
+        <GridBackground className="h-[171px] w-full md:h-full" />
       </div>
       <div className="flex flex-col items-center gap-4 px-4 w-full max-w-[720px] relative z-10">
         <LogoText className="text-2xl" />
@@ -145,12 +145,14 @@ const Onboarding = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="absolute bottom-0 px-4 pb-8 pt-4 text-body-xsmall text-muted-foreground flex flex-col items-center gap-4">
-        <SocialLink />© 2025 BINK AI
+      <div className="absolute bottom-0 w-full flex md:flex-col flex-row justify-between items-center md:justify-center p-4">
+        <SocialLink />
+        <div className="text-body-xsmall text-muted-foreground flex flex-col items-center gap-4">
+          © 2025 BINK AI
+        </div>
       </div>
       <div className="absolute bottom-0 left-0 rotate-180 w-screen overflow-hidden">
-        <GridBackground className="w-full h-full" />
+        <GridBackground className="h-[171px] w-full md:h-full" />
       </div>
     </div>
   );

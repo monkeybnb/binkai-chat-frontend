@@ -2,6 +2,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { AlignArrowLeft } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useNetworkConnect } from "@/hooks/useNetworkConnect";
+import { useViewWidth } from "@/hooks/useViewWidthHeight";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import ConnectBaseWalletDialog from "./ConnectBaseWalletDialog";
@@ -45,12 +46,16 @@ export default function RightSider({
     handleDisconnectAll,
   } = useNetworkConnect();
 
+  const viewWidth = useViewWidth();
+  const isHdScreen = viewWidth < 1280;
+
   return (
     <div
       className={cn(
         "flex flex-col w-[300px] h-screen overflow-hidden border-l transition-all duration-300",
         {
           "w-[0px]": !isOpenRightSider,
+          "absolute right-0 z-10 bg-background": isHdScreen,
         }
       )}
     >

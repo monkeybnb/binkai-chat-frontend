@@ -17,7 +17,7 @@ const WalletButton = ({
 }: WalletButtonProps) => {
   return (
     <button
-      className={`w-full h-[72px] bg-muted hover:bg-brand-50 flex items-center rounded-xl justify-between pl-5 pr-4 py-4 ${
+      className={`w-full h-[72px] mobile:h-auto bg-muted hover:bg-brand-50 flex items-center rounded-xl justify-between mobile:pl-3 mobile:pr-2 mobile:py-3 pl-5 pr-4 py-4 ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       }`}
       onClick={handleConnect}
@@ -28,7 +28,7 @@ const WalletButton = ({
           <img
             src={iconUrl}
             alt={connector.name}
-            className="w-10 h-10 rounded-full aspect-square"
+            className="w-10 h-10 mobile:w-8 mobile:h-8 rounded-full aspect-square"
           />
         )}
         <span className="text-label-medium">

@@ -7,13 +7,21 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Bink AI",
   description: "Bink AI",
   icons: {
     icon: "/images/logo.png",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
   },
 };
 
@@ -27,7 +35,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/images/logo.png" sizes="any" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} mobile:text-mobile-base`}>
         <WalletProvider>
           <AuthProvider>
             <TooltipProvider>
