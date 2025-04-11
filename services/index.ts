@@ -39,6 +39,7 @@ export const getStreamMessage = async (params: {
     },
     responseType: "stream",
     adapter: "fetch",
+    timeout: 300000,
   });
 };
 

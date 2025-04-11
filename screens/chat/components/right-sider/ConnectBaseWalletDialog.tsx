@@ -65,7 +65,7 @@ const ConnectBaseWalletDialog = ({
         })
       }
     >
-      <DialogContent className=" p-0 gap-0 max-w-[432px]">
+      <DialogContent className="p-0 gap-0 max-w-[432px] z-[200]">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-center font-medium">
             Connect Base Wallet

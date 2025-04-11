@@ -109,3 +109,59 @@
   }
 }
 
+/* Mobile text size optimization */
+@media (max-width: 768px) {
+  .text-heading-1 {
+    @apply text-heading-1-mobile;
+  }
+  .text-heading-2 {
+    @apply text-heading-2-mobile;
+  }
+  .text-heading-3 {
+    @apply text-heading-3-mobile;
+  }
+  .text-heading-4 {
+    @apply text-heading-4-mobile;
+  }
+  .text-heading-5 {
+    @apply text-heading-5-mobile;
+  }
+  .text-heading-6 {
+    @apply text-heading-6-mobile;
+  }
+  .text-body-large {
+    @apply text-body-large-mobile;
+  }
+  .text-body-medium {
+    @apply text-body-medium-mobile;
+  }
+  .text-body-small {
+    @apply text-body-small-mobile;
+  }
+  .text-body-xsmall {
+    @apply text-body-xsmall-mobile;
+  }
+  .text-label-large {
+    @apply text-label-large-mobile;
+  }
+  .text-label-medium {
+    @apply text-label-medium-mobile;
+  }
+  .text-label-small {
+    @apply text-label-small-mobile;
+  }
+  .text-label-xsmall {
+    @apply text-label-xsmall-mobile;
+  }
+  .text-label-2xsmall {
+    @apply text-label-2xsmall-mobile;
+  }
+
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    -webkit-text-size-adjust: none;
+  }
+}

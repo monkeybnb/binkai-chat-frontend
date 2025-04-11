@@ -10,6 +10,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        mobile: { max: "768px" },
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
@@ -95,10 +98,19 @@ const config: Config = {
         scale: "scale 0.3s ease-in-out infinite",
       },
       fontSize: {
+        "mobile-base": "14px",
         "heading-1": [
           "60px",
           {
             lineHeight: "64px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
+        "heading-1-mobile": [
+          "58px",
+          {
+            lineHeight: "62px",
             fontWeight: "500",
             letterSpacing: "0px",
           },
@@ -111,10 +123,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "heading-2-mobile": [
+          "46px",
+          {
+            lineHeight: "54px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
         "heading-3": [
           "40px",
           {
             lineHeight: "48px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
+        "heading-3-mobile": [
+          "38px",
+          {
+            lineHeight: "46px",
             fontWeight: "500",
             letterSpacing: "0px",
           },
@@ -127,10 +155,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "heading-4-mobile": [
+          "30px",
+          {
+            lineHeight: "38px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
         "heading-5": [
           "24px",
           {
             lineHeight: "32px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
+        "heading-5-mobile": [
+          "22px",
+          {
+            lineHeight: "30px",
             fontWeight: "500",
             letterSpacing: "0px",
           },
@@ -143,10 +187,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "heading-6-mobile": [
+          "16px",
+          {
+            lineHeight: "22px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
         "body-large": [
           "18px",
           {
             lineHeight: "28px",
+            fontWeight: "400",
+            letterSpacing: "0px",
+          },
+        ],
+        "body-large-mobile": [
+          "16px",
+          {
+            lineHeight: "26px",
             fontWeight: "400",
             letterSpacing: "0px",
           },
@@ -159,10 +219,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "body-medium-mobile": [
+          "14px",
+          {
+            lineHeight: "22px",
+            fontWeight: "400",
+            letterSpacing: "0px",
+          },
+        ],
         "body-small": [
           "14px",
           {
             lineHeight: "20px",
+            fontWeight: "400",
+            letterSpacing: "0px",
+          },
+        ],
+        "body-small-mobile": [
+          "12px",
+          {
+            lineHeight: "18px",
             fontWeight: "400",
             letterSpacing: "0px",
           },
@@ -175,10 +251,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "body-xsmall-mobile": [
+          "10px",
+          {
+            lineHeight: "14px",
+            fontWeight: "400",
+            letterSpacing: "0px",
+          },
+        ],
         "label-large": [
           "18px",
           {
             lineHeight: "28px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
+        "label-large-mobile": [
+          "16px",
+          {
+            lineHeight: "26px",
             fontWeight: "500",
             letterSpacing: "0px",
           },
@@ -191,10 +283,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "label-medium-mobile": [
+          "14px",
+          {
+            lineHeight: "22px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
         "label-small": [
           "14px",
           {
             lineHeight: "20px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
+        "label-small-mobile": [
+          "12px",
+          {
+            lineHeight: "18px",
             fontWeight: "500",
             letterSpacing: "0px",
           },
@@ -207,10 +315,26 @@ const config: Config = {
             letterSpacing: "0px",
           },
         ],
+        "label-xsmall-mobile": [
+          "10px",
+          {
+            lineHeight: "14px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
         "label-2xsmall": [
           "10px",
           {
             lineHeight: "12px",
+            fontWeight: "500",
+            letterSpacing: "0px",
+          },
+        ],
+        "label-2xsmall-mobile": [
+          "8px",
+          {
+            lineHeight: "10px",
             fontWeight: "500",
             letterSpacing: "0px",
           },

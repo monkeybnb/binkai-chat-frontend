@@ -38,29 +38,29 @@ export const useNetworkConnect = () => {
       visible: false,
     });
 
-  useEffect(() => {
-    const handleNetworkUnavailable = (params: { network: string }) => {
-      if (params.network === "solana") {
-        setNetworkConnectState({
-          type: "solana",
-          visible: true,
-          network: params.network,
-        });
-      } else if (params.network === "evm") {
-        setNetworkConnectState({
-          type: "evm",
-          visible: true,
-          network: params.network,
-        });
-      }
-    };
+  // useEffect(() => {
+  //   const handleNetworkUnavailable = (params: { network: string }) => {
+  //     if (params.network === "solana") {
+  //       setNetworkConnectState({
+  //         type: "solana",
+  //         visible: true,
+  //         network: params.network,
+  //       });
+  //     } else if (params.network === "evm") {
+  //       setNetworkConnectState({
+  //         type: "evm",
+  //         visible: true,
+  //         network: params.network,
+  //       });
+  //     }
+  //   };
 
-    socketService.on("network_unavailable", handleNetworkUnavailable);
+  //   socketService.on("network_unavailable", handleNetworkUnavailable);
 
-    return () => {
-      socketService.off("network_unavailable", handleNetworkUnavailable);
-    };
-  }, []);
+  //   return () => {
+  //     socketService.off("network_unavailable", handleNetworkUnavailable);
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (connectedSolana) {

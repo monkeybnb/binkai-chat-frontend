@@ -23,11 +23,12 @@ type Status = "IDLE" | "GENERATING";
 
 const HomeContent = () => {
   const [message, setMessage] = useState("");
-  const { createThread } = useChatStore();
+  const { createThread, setSending } = useChatStore();
   const { navigateToThread } = useThreadRouter();
 
   const handleSendMessage = async () => {
     try {
+      setSending(true);
       const threadId = await createThread(message);
       navigateToThread(threadId);
 
@@ -35,24 +36,26 @@ const HomeContent = () => {
         "pendingMessage",
         JSON.stringify({ message, threadId })
       );
+      setSending(false);
     } catch (error) {
       console.error("Error in message flow:", error);
+      setSending(false);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden max-w-[720px] mx-auto w-full items-center justify-center gap-8 pb-6">
-      <Logo className="w-[210px] h-[210px]" />
-      <div className="flex flex-col gap-6 w-full items-stretch">
+    <div className="flex-1 flex flex-col overflow-hidden max-w-[720px] mx-auto w-full items-center justify-center gap-6 pb-0 md:pb-6">
+      <div className="flex flex-col gap-2 md:gap-8 w-full items-center md:flex-none flex-1 justify-center">
+        <Logo className="w-[160px] h-[160px] md:w-[210px] md:h-[210px]" />
         <span className="text-heading-5 text-center">
           Hey, what can I help?
         </span>
-        <MessageInput
-          message={message}
-          setMessage={setMessage}
-          onSendMessage={handleSendMessage}
-        />
       </div>
+      <MessageInput
+        message={message}
+        setMessage={setMessage}
+        onSendMessage={handleSendMessage}
+      />
     </div>
   );
 };
@@ -175,7 +178,7 @@ const ChatContainer = () => {
           ref={ref}
           onScroll={handleScroll}
         >
-          <div className="mb-auto max-w-[720px] w-full flex flex-col p-4">
+          <div className="mb-auto max-w-screen md:max-w-[720px] w-full flex flex-col p-4">
             {hasMore && (
               <div ref={loadingRef} className="flex justify-center py-4">
                 {isLoading ? (

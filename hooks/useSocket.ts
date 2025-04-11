@@ -1,10 +1,11 @@
 import { socketService } from "@/services/socket";
+import { useLayoutStore } from "@/stores/layout-store";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-
+  const { setIsOpenRightSider } = useLayoutStore();
   useEffect(() => {
     const handleConnect = () => {
       setIsConnected(true);
@@ -18,6 +19,7 @@ export const useSocket = () => {
 
     const handleNetworkUnavailable = (params: { network: string }) => {
       toast(`Please connect ${params.network} network`);
+      setIsOpenRightSider(true);
     };
 
     socketService.on("connect", handleConnect);
