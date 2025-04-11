@@ -32,13 +32,13 @@ export const getStreamMessage = async (params: {
   threadId: string;
   message: string;
 }) => {
-  return api.get(`/chat/stream`, {
-    data: params,
+  return api.post(`/chat/stream`, params, {
     headers: {
       "Content-Type": "application/json",
       accept: "*/*",
     },
     responseType: "stream",
+    adapter: "fetch",
   });
 };
 

@@ -1,15 +1,23 @@
 import {
   createThread,
   deleteThread,
+  getStreamMessage,
   getThread,
   getThreadMessages,
-  sendChat,
 } from "@/services";
+import { EventSourceParserStream } from "eventsource-parser/stream";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { useAuthStore } from "./auth-store";
+
+type TextStreamUpdate = {
+  done: boolean;
+  content: string;
+  citations?: any;
+  error?: any;
+};
 
 export interface Message {
   id: string;
@@ -64,6 +72,17 @@ interface ChatState {
     threadId: string | null;
   }) => Promise<string | null>;
   createThread: (message: string) => Promise<string>;
+  streamToIterator: (
+    reader: ReadableStreamDefaultReader
+  ) => AsyncGenerator<TextStreamUpdate>;
+  createTextStream: (
+    responseBody: ReadableStream<Uint8Array>,
+    tempMsgUid: string,
+    currentThreadId: string
+  ) => Promise<{
+    content: string;
+    reason?: string;
+  }>;
 }
 
 export const useChatStore = create<ChatState>()((set, get) => ({
@@ -348,16 +367,96 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }
   },
 
+  streamToIterator: async function* (
+    reader: ReadableStreamDefaultReader
+  ): AsyncGenerator<TextStreamUpdate> {
+    while (true) {
+      const { value, done }: any = await reader.read();
+
+      if (done) {
+        yield { done: true, content: "" };
+        break;
+      }
+      if (!value) {
+        continue;
+      }
+      const data = value.data;
+      if (data.startsWith("[DONE]")) {
+        yield { done: true, content: "" };
+        break;
+      }
+
+      try {
+        const parsedData = JSON.parse(data);
+
+        if (parsedData.error) {
+          yield { done: true, content: "", error: parsedData.error };
+          break;
+        }
+
+        if (parsedData.citations) {
+          yield { done: false, content: "", citations: parsedData.citations };
+          continue;
+        }
+
+        yield {
+          done: false,
+          content: parsedData.content ?? "",
+        };
+      } catch (e) {
+        console.error("Error extracting delta from SSE event:", e);
+        yield { done: true, content: "", error: e };
+      }
+    }
+  },
+
+  createTextStream: async (
+    responseBody: ReadableStream<Uint8Array>,
+    tempMsgUid: string,
+    currentThreadId: string
+  ): Promise<{
+    content: string;
+    reason?: string;
+  }> => {
+    let content = "";
+    let reason = undefined;
+
+    const eventStream = responseBody
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new EventSourceParserStream())
+      .getReader();
+
+    const iterator = get().streamToIterator(eventStream);
+
+    for await (const update of iterator) {
+      const { content: chunk, done, error } = update;
+
+      if (error || done) {
+        if (!reason) reason = error;
+        break;
+      }
+
+      if (chunk === "" || chunk === "\n") continue;
+
+      content += chunk;
+
+      get().updateMessage(tempMsgUid, {
+        content,
+        is_ai: true,
+        thread_id: currentThreadId as string,
+        isLoading: false,
+      });
+    }
+
+    return { content, reason };
+  },
+
   sendMessage: async ({ message, threadId }) => {
     if (!message.trim()) return null;
     const tempMsgUid = uuidv4();
 
     let currentThreadId = threadId;
     try {
-      // if (!currentThreadId) {
-      //   currentThreadId = await get().createThread(message);
-      // }
-
       const userMessage: Message = {
         id: Date.now().toString(),
         content: message,
@@ -378,42 +477,28 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
       get().addMessage(tempMessage);
 
-      const response: any = await sendChat({
+      const response = await getStreamMessage({
         threadId: currentThreadId as string,
         message,
       });
 
-      // const response: any = await getStreamMessage({
-      //   thread_id: currentThreadId as string,
-      //   question: message,
-      // });
+      const { content: textStream, reason } = await get().createTextStream(
+        response as any,
+        tempMsgUid,
+        currentThreadId as string
+      );
 
-      if (response?.error) {
+      if (reason) {
         get().updateMessage(tempMsgUid, {
           isLoading: false,
           is_ai: true,
-          error:
-            "An error occurred while generating the response. Please try again.",
+          error: reason,
         });
-        return currentThreadId;
       }
 
-      // const reader = response.data.getReader();
-      // const decoder = new TextDecoder();
-      // let content = "";
-
-      // while (true) {
-      //   const { done, value } = await reader.read();
-      //   if (done) break;
-
-      //   const chunk = decoder.decode(value);
-      //   content += chunk;
-      // }
-      console.log(response, "response");
       get().updateMessage(tempMsgUid, {
-        content: response.response,
+        content: textStream,
         is_ai: true,
-        created_at: new Date().toISOString(),
         thread_id: currentThreadId as string,
         isLoading: false,
       });
