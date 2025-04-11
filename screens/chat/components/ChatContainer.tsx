@@ -23,11 +23,12 @@ type Status = "IDLE" | "GENERATING";
 
 const HomeContent = () => {
   const [message, setMessage] = useState("");
-  const { createThread } = useChatStore();
+  const { createThread, setSending } = useChatStore();
   const { navigateToThread } = useThreadRouter();
 
   const handleSendMessage = async () => {
     try {
+      setSending(true);
       const threadId = await createThread(message);
       navigateToThread(threadId);
 
@@ -35,8 +36,10 @@ const HomeContent = () => {
         "pendingMessage",
         JSON.stringify({ message, threadId })
       );
+      setSending(false);
     } catch (error) {
       console.error("Error in message flow:", error);
+      setSending(false);
     }
   };
 

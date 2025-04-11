@@ -24,13 +24,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const { isLoading, isSending } = useChatStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleChangeQuestion = (e: React.ChangeEvent<HTMLTextAreaElement>) =>
+  const handleChangeQuestion = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (isSending) return;
     setMessage(e.target.value);
+  };
 
   const handleKeyDown = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
-    textareaRef.current?.focus();
     if (isSending) return;
     if (event.ctrlKey && event.key === ENTER_KEY) {
       event.preventDefault();
@@ -41,6 +42,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     if (event.key === ENTER_KEY && !event.shiftKey) {
       event.preventDefault();
       onSendMessage();
+      setMessage("");
     }
   };
 
