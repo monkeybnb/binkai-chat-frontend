@@ -109,6 +109,12 @@ const Onboarding = () => {
     }
   };
 
+  // useEffect(() => {
+  //   if (isConnected) {
+  //     handleDisconnect();
+  //   }
+  // }, [isConnected]);
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col items-center justify-center relative bg-background">
       <div className="absolute top-0 left-0 w-screen overflow-hidden">

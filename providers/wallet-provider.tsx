@@ -111,7 +111,7 @@ export default function QueryClientProviderWrapper({
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectionProvider endpoint={rpc}>
-          <SolanaWalletProvider wallets={wallets} autoConnect>
+          <SolanaWalletProvider wallets={wallets}>
             <WalletModalProvider>
               <RainbowKitProvider modalSize="compact" theme={customTheme}>
                 {children}

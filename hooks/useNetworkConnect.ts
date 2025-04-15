@@ -20,7 +20,7 @@ export interface NetworkConnectState {
 export const useNetworkConnect = () => {
   const router = useRouter();
   const { logout } = useAuthStore();
-  const { disconnectAsync } = useDisconnect();
+  const { disconnectAsync, disconnect } = useDisconnect();
   const { isConnected: isConnectedEvm, address } = useAccount();
   const {
     connected: connectedSolana,
@@ -143,6 +143,7 @@ export const useNetworkConnect = () => {
   const handleDisconnectAll = async () => {
     router.push("/");
     await disconnectAsync();
+    await disconnect();
     await disconnectSolana();
     logout();
   };

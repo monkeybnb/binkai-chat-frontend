@@ -71,7 +71,7 @@ export default function RightSider({
         <div className="px-4 py-2 border-b">
           <div className="flex items-center justify-between">
             <h2 className="text-label-large whitespace-nowrap">
-              Network Connect
+              Network Conenction
             </h2>
             <Button
               variant="ghost"

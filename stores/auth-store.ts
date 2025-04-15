@@ -60,6 +60,7 @@ export const useAuthStore = create<AuthState>()(
           console.log("Starting sign message ...");
 
           const message = `Sign this message to login with nonce: ${data.nonce}`;
+
           const signature = await signMessageAsync({ message });
 
           console.log("Sign success!", signature);

@@ -482,6 +482,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
       get().addMessage(tempMessage);
 
+      // Return message by stream flow
       const response = await getStreamMessage({
         threadId: currentThreadId as string,
         message,
@@ -507,6 +508,31 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         thread_id: currentThreadId as string,
         isLoading: false,
       });
+
+      // Send message by api flow
+      // const response: any = await sendChat({
+      //   threadId: currentThreadId as string,
+      //   message,
+      // });
+
+      // if (response?.error) {
+      //   get().updateMessage(tempMsgUid, {
+      //     isLoading: false,
+      //     is_ai: true,
+      //     error:
+      //       "An error occurred while generating the response. Please try again.",
+      //   });
+      //   return currentThreadId;
+      // }
+
+      // console.log(response, "response");
+      // get().updateMessage(tempMsgUid, {
+      //   content: response.response,
+      //   is_ai: true,
+      //   created_at: new Date().toISOString(),
+      //   thread_id: currentThreadId as string,
+      //   isLoading: false,
+      // });
 
       return currentThreadId;
     } catch (error) {
