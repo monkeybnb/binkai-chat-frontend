@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthStore } from "@/stores/auth-store";
 import {
   connectorsForWallets,
   lightTheme,
@@ -82,6 +83,7 @@ export default function QueryClientProviderWrapper({
   children: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
+  const { isAuthenticated } = useAuthStore();
 
   const wallets = useMemo(
     () => [
@@ -102,7 +104,7 @@ export default function QueryClientProviderWrapper({
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectionProvider endpoint={rpc}>
-          <SolanaWalletProvider wallets={wallets} autoConnect={false}>
+          <SolanaWalletProvider wallets={wallets} autoConnect={isAuthenticated}>
             <WalletModalProvider>
               <RainbowKitProvider modalSize="compact" theme={customTheme}>
                 {children}

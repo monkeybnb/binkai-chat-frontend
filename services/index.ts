@@ -43,6 +43,8 @@ export const getStreamMessage = async (params: {
         "Content-Type": "application/json",
         Accept: "*/*",
         Authorization: `Bearer ${token}`,
+        Connection: "keep-alive",
+        "Keep-Alive": "timeout=300", // 5 minutes in seconds
       },
       body: JSON.stringify(params),
       signal: controller.signal,
