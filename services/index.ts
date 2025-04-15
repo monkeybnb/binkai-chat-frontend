@@ -33,6 +33,8 @@ export const getStreamMessage = async (params: {
   message: string;
 }) => {
   const token = localStorage.getItem("access_token");
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5 minutes
 
   try {
     const response = await fetch(`${apiUrl}/chat/stream`, {
@@ -43,7 +45,10 @@ export const getStreamMessage = async (params: {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(params),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok && response.status !== 201) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -53,6 +58,8 @@ export const getStreamMessage = async (params: {
   } catch (error: unknown) {
     console.error("Error fetching stream message:", error);
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 
