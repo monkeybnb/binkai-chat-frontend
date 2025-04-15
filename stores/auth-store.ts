@@ -1,6 +1,7 @@
 import { APIResponse } from "@/interfaces";
 import { getProfile } from "@/services";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useChatStore } from "./index";
@@ -10,9 +11,16 @@ interface AuthState {
   isLoading: boolean;
   profile: any | undefined;
   setProfile: (profile: any) => void;
-  login: (params: { address: string; signMessageAsync: any }) => Promise<void>;
+  login: (params: {
+    address: string;
+    signMessageAsync: any;
+    loginMethod: string;
+    disconnect: any;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
+  loginMethod: string;
+  setLoginMethod: (method: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -22,7 +30,8 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       userInfo: undefined,
       profile: undefined,
-
+      loginMethod: "",
+      setLoginMethod: (method: string) => set({ loginMethod: method }),
       setProfile: (profile) => set({ profile }),
 
       fetchProfile: async () => {
@@ -38,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async ({ address, signMessageAsync }) => {
+      login: async ({ address, signMessageAsync, loginMethod, disconnect }) => {
         const accessToken = localStorage.getItem("access_token");
 
         if (accessToken) {
@@ -60,7 +69,16 @@ export const useAuthStore = create<AuthState>()(
           console.log("Starting sign message ...");
 
           const message = `Sign this message to login with nonce: ${data.nonce}`;
-          const signature = await signMessageAsync({ message });
+
+          let signature: string;
+
+          if (loginMethod === "solana") {
+            const signMsg = new TextEncoder().encode(message);
+            const sg = await signMessageAsync(signMsg);
+            signature = Buffer.from(sg).toString("base64");
+          } else {
+            signature = await signMessageAsync({ message });
+          }
 
           console.log("Sign success!", signature);
           const loginData = { address, signature };
@@ -79,6 +97,8 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error("Authentication failed:", error);
+          toast("Login failed! Please try again.");
+          await disconnect();
           await get().logout();
         } finally {
           set({ isLoading: false });
@@ -90,6 +110,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             isAuthenticated: false,
             profile: undefined,
+            loginMethod: "",
           });
           // Reset chat store state
           useChatStore.setState({

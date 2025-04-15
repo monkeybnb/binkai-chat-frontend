@@ -28,7 +28,7 @@ const HomeContent = () => {
 
   const handleSendMessage = async () => {
     try {
-      setSending(true);
+      setSending("home", true);
       const threadId = await createThread(message);
       navigateToThread(threadId);
 
@@ -36,10 +36,10 @@ const HomeContent = () => {
         "pendingMessage",
         JSON.stringify({ message, threadId })
       );
-      setSending(false);
+      setSending("home", false);
     } catch (error) {
       console.error("Error in message flow:", error);
-      setSending(false);
+      setSending("home", false);
     }
   };
 
@@ -55,6 +55,7 @@ const HomeContent = () => {
         message={message}
         setMessage={setMessage}
         onSendMessage={handleSendMessage}
+        threadId="home"
       />
     </div>
   );
@@ -76,11 +77,8 @@ const ChatContainer = () => {
     useSendTransaction();
   const { connect, isConnected } = useSocket();
 
-  const {
-    signMessage: signMessageAsyncSolana,
-    signTransaction: signTransactionSolana,
-    publicKey: publicKeySolana,
-  } = useWallet();
+  const { signMessage: signMessageAsyncSolana, publicKey: publicKeySolana } =
+    useWallet();
 
   const ref = useRef<HTMLDivElement>(null);
   const { ref: loadingRef, inView } = useInView({
@@ -237,6 +235,7 @@ const ChatContainer = () => {
         message={message}
         setMessage={setMessage}
         onSendMessage={handleSendMessage}
+        threadId={threadId}
       />
     </div>
   );

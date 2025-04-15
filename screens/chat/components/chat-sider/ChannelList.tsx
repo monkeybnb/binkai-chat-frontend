@@ -2,6 +2,7 @@
 
 import { Thread, useThreads } from "@/stores";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import ChannelGroup from "./ChannelGroup";
 
@@ -48,7 +49,11 @@ const groupByTimeframe = (threads: Thread[]) => {
 };
 
 export const ChannelList = () => {
-  const { threads, isLoading, hasMore, fetchMoreThreads } = useThreads();
+  const searchParams = useSearchParams();
+  const threadId = searchParams.get("threadId");
+  const { threads, isLoading, hasMore, fetchMoreThreads } = useThreads(
+    threadId as string
+  );
   const loadingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

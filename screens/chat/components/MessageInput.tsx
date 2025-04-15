@@ -13,26 +13,29 @@ interface MessageInputProps {
   message: string;
   setMessage: any;
   onSendMessage: () => void;
+  threadId: string;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
   message,
   setMessage,
   onSendMessage,
+  threadId,
 }) => {
   const { isAuthenticated } = useAuthStore();
   const { isLoading, isSending } = useChatStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleChangeQuestion = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (isSending) return;
+    if (isSending[threadId]) return;
+
     setMessage(e.target.value);
   };
 
   const handleKeyDown = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
-    if (isSending) return;
+    if (isSending[threadId]) return;
     if (event.ctrlKey && event.key === ENTER_KEY) {
       event.preventDefault();
       setMessage((prevMsg: string) => `${prevMsg}\n`);
@@ -92,7 +95,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
               onSendMessage();
               textareaRef.current?.focus();
             }}
-            disabled={!message.trim() || !isAuthenticated || isSending}
+            disabled={
+              !message.trim() || !isAuthenticated || isSending[threadId]
+            }
           >
             <ArrowUp />
           </Button>

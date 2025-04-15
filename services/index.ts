@@ -32,15 +32,28 @@ export const getStreamMessage = async (params: {
   threadId: string;
   message: string;
 }) => {
-  return api.post(`/chat/stream`, params, {
-    headers: {
-      "Content-Type": "application/json",
-      accept: "*/*",
-    },
-    responseType: "stream",
-    adapter: "fetch",
-    timeout: 300000,
-  });
+  const token = localStorage.getItem("access_token");
+
+  try {
+    const response = await fetch(`${apiUrl}/chat/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "*/*",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok && response.status !== 201) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.body;
+  } catch (error: unknown) {
+    console.error("Error fetching stream message:", error);
+    throw error;
+  }
 };
 
 export const sendChat = async (params: {

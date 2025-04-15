@@ -45,15 +45,15 @@ interface ChatState {
   threads: Thread[];
   currentThreadId: string | null;
   isLoading: boolean;
-  isSending: boolean;
+  isSending: Record<string, boolean>;
   isLoadingMore: Record<string, boolean>;
   hasMore: boolean;
   currentPage: number;
   messageHasMore: Record<string, boolean>;
   messageCurrentPage: Record<string, number>;
   setLoading: (loading: boolean) => void;
-  setSending: (sending: boolean) => void;
-  fetchThreads: (page?: number) => Promise<void>;
+  setSending: (threadId: string, sending: boolean) => void;
+  fetchThreads: (page?: number, threadId?: string) => Promise<void>;
   fetchMoreThreads: () => Promise<void>;
   fetchThreadMessages: (params: {
     threadId: string;
@@ -92,30 +92,37 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   threads: [],
   currentThreadId: null,
   isLoading: false,
-  isSending: false,
+  isSending: {},
   isLoadingMore: {},
-  hasMore: true,
+  hasMore: false,
   currentPage: 1,
   messageHasMore: {},
   messageCurrentPage: {},
   pendingMessage: null,
 
   setLoading: (loading) => set({ isLoading: loading }),
-  setSending: (sending) => set({ isSending: sending }),
-
-  fetchThreads: async (page = 1) => {
+  setSending: (threadId: string, sending: boolean) =>
+    set((state: ChatState) => ({
+      isSending: {
+        ...state.isSending,
+        [threadId]: sending,
+      },
+    })),
+  fetchThreads: async (page = 1, threadId?: string) => {
     try {
-      const response = await getThread({ page, take: 20 });
+      const response = await getThread({ page, take: 40 });
       if (page === 1) {
         set({
           threads: response.data,
           currentPage: 1,
-          hasMore: response.data.length === 20,
+          hasMore: response.data.length === 40,
         });
+
+        get().fetchThreadMessages({ threadId: threadId as string, page: 1 });
       } else {
         set((state) => ({
           threads: [...state.threads, ...response.data],
-          hasMore: response.data.length === 20,
+          hasMore: response.data.length === 40,
         }));
       }
     } catch (error) {
@@ -461,7 +468,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     let currentThreadId = threadId;
     try {
-      get().setSending(true);
+      get().setSending(currentThreadId as string, true);
       const userMessage: Message = {
         id: Date.now().toString(),
         content: message,
@@ -482,6 +489,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
       get().addMessage(tempMessage);
 
+      // Return message by stream flow
       const response = await getStreamMessage({
         threadId: currentThreadId as string,
         message,
@@ -508,6 +516,31 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         isLoading: false,
       });
 
+      // Send message by api flow
+      // const response: any = await sendChat({
+      //   threadId: currentThreadId as string,
+      //   message,
+      // });
+
+      // if (response?.error) {
+      //   get().updateMessage(tempMsgUid, {
+      //     isLoading: false,
+      //     is_ai: true,
+      //     error:
+      //       "An error occurred while generating the response. Please try again.",
+      //   });
+      //   return currentThreadId;
+      // }
+
+      // console.log(response, "response");
+      // get().updateMessage(tempMsgUid, {
+      //   content: response.response,
+      //   is_ai: true,
+      //   created_at: new Date().toISOString(),
+      //   thread_id: currentThreadId as string,
+      //   isLoading: false,
+      // });
+
       return currentThreadId;
     } catch (error) {
       console.error("Error sending message:", error);
@@ -520,7 +553,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       }
       return null;
     } finally {
-      get().setSending(false);
+      get().setSending(currentThreadId as string, false);
     }
   },
 }));
@@ -532,16 +565,16 @@ interface ThreadsHookReturn {
   fetchMoreThreads: () => Promise<void>;
 }
 
-export const useThreads = (): ThreadsHookReturn => {
+export const useThreads = (threadId?: string): ThreadsHookReturn => {
   const { threads, isLoading, hasMore, fetchThreads, fetchMoreThreads } =
     useChatStore();
   const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     if (isAuthenticated && threads.length === 0) {
-      fetchThreads(1);
+      fetchThreads(1, threadId);
     }
-  }, [isAuthenticated, fetchThreads, threads.length]);
+  }, [isAuthenticated, fetchThreads, threads.length, threadId]);
 
   return { threads, isLoading, hasMore, fetchMoreThreads };
 };

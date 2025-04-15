@@ -20,14 +20,16 @@ export interface NetworkConnectState {
 export const useNetworkConnect = () => {
   const router = useRouter();
   const { logout } = useAuthStore();
-  const { disconnectAsync } = useDisconnect();
+  const { disconnectAsync, disconnect } = useDisconnect();
   const { isConnected: isConnectedEvm, address } = useAccount();
   const {
     connected: connectedSolana,
     disconnect: disconnectSolana,
-    publicKey,
+    publicKey: publicKeySolana,
     signMessage: signMessageSolana,
   } = useWallet();
+  const { address: addressEvm } = useAccount();
+
   const { signMessageAsync } = useSignMessage();
   const { sendTransactionAsync: sendTransactionAsyncEvm } =
     useSendTransaction();
@@ -66,9 +68,9 @@ export const useNetworkConnect = () => {
     if (connectedSolana) {
       socketService.updateWalletConfig({
         solana: {
-          address: publicKey?.toString() || "",
+          address: publicKeySolana?.toString() || "",
           signMessageAsync: async ({ message }: { message: string }) => {
-            if (!publicKey) throw new Error("Wallet not connected");
+            if (!publicKeySolana) throw new Error("Wallet not connected");
 
             const encodedMessage = new TextEncoder().encode(message);
             const signedMessage = await signMessageSolana?.(encodedMessage);
@@ -143,6 +145,7 @@ export const useNetworkConnect = () => {
   const handleDisconnectAll = async () => {
     router.push("/");
     await disconnectAsync();
+    await disconnect();
     await disconnectSolana();
     logout();
   };
@@ -157,5 +160,7 @@ export const useNetworkConnect = () => {
     handleDisconnectEvm,
     handleDisconnectSolana,
     handleDisconnectAll,
+    addressSolana: publicKeySolana?.toString(),
+    addressEvm,
   };
 };
