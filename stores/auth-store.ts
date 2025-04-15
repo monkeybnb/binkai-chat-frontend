@@ -1,6 +1,7 @@
 import { APIResponse } from "@/interfaces";
 import { getProfile } from "@/services";
 import axios from "axios";
+import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useChatStore } from "./index";
@@ -14,6 +15,7 @@ interface AuthState {
     address: string;
     signMessageAsync: any;
     loginMethod: string;
+    disconnect: any;
   }) => Promise<void>;
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
@@ -45,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async ({ address, signMessageAsync, loginMethod }) => {
+      login: async ({ address, signMessageAsync, loginMethod, disconnect }) => {
         const accessToken = localStorage.getItem("access_token");
 
         if (accessToken) {
@@ -95,6 +97,8 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error("Authentication failed:", error);
+          toast("Login failed! Please try again.");
+          await disconnect();
           await get().logout();
         } finally {
           set({ isLoading: false });
@@ -106,6 +110,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             isAuthenticated: false,
             profile: undefined,
+            loginMethod: "",
           });
           // Reset chat store state
           useChatStore.setState({

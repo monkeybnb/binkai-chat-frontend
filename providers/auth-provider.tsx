@@ -3,10 +3,12 @@
 import { useAuthStore } from "@/stores/auth-store";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ReactNode, useEffect } from "react";
-import { useAccount, useSignMessage } from "wagmi";
+import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { address, isConnected } = useAccount();
+  const { disconnect: disconnectSolana } = useWallet();
+  const { disconnect: disconnectEvm } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
   const { loginMethod } = useAuthStore();
   const login = useAuthStore((state) => state.login);
@@ -20,9 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (address && isConnected && !isAuthenticated && loginMethod === "evm") {
-      console.log(loginMethod, "loginMethod");
-
-      login({ address, signMessageAsync, loginMethod });
+      login({
+        address,
+        signMessageAsync,
+        loginMethod,
+        disconnect: disconnectEvm,
+      });
       return;
     }
 
@@ -38,9 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         address: publicKey.toString(),
         signMessageAsync: signMessageSolana,
         loginMethod,
+        disconnect: disconnectSolana,
       });
     }
-  }, [address, isConnected, isAuthenticated, publicKey, isConnectedSolana]);
+  }, [
+    address,
+    isConnected,
+    isAuthenticated,
+    publicKey,
+    isConnectedSolana,
+    loginMethod,
+  ]);
 
   return <>{children}</>;
 }

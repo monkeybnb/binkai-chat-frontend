@@ -9,7 +9,6 @@ declare global {
 }
 
 import { GridBackground, LogoText } from "@/components/icons";
-import { Button } from "@/components/ui/button";
 import { useWalletAutoConnect } from "@/hooks/useWalletAutoConnect";
 import { useAuthStore } from "@/stores/auth-store";
 import { WalletButton as RainbowWalletButton } from "@rainbow-me/rainbowkit";
@@ -19,7 +18,7 @@ import { useAccount, useChainId, useChains, useDisconnect } from "wagmi";
 import SocialLink from "./SocialLink";
 import WalletButton from "./WalletButton";
 
-export const WALLETS = ["binance", "metamask", "trust"];
+export const WALLETS = ["binance", "metamask", "trust", "safepal"];
 
 interface CustomWalletButtonProps {
   ready: boolean;
@@ -110,7 +109,12 @@ const Onboarding = () => {
   const { disconnect } = useDisconnect();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const { setLoginMethod } = useAuthStore();
-  const { wallets, select, connecting } = useWallet();
+  const {
+    wallets,
+    select,
+    connecting,
+    disconnect: disconnectSolana,
+  } = useWallet();
   const solanaWallet = wallets.find(
     (wallet) => wallet.adapter.name === "Phantom"
   );
@@ -120,6 +124,7 @@ const Onboarding = () => {
     try {
       setIsDisconnecting(true);
       await disconnect();
+      await disconnectSolana();
     } catch (error) {
       console.error("Failed to disconnect:", error);
     } finally {
@@ -140,14 +145,13 @@ const Onboarding = () => {
         </p>
 
         <div className="w-full flex flex-col gap-4 py-8 max-w-[440px]">
-          {!isConnected &&
-            WALLETS.map((wallet) => (
-              <RainbowWalletButton.Custom wallet={wallet as any} key={wallet}>
-                {(props) => <CustomWalletButton {...props} />}
-              </RainbowWalletButton.Custom>
-            ))}
+          {WALLETS.map((wallet) => (
+            <RainbowWalletButton.Custom wallet={wallet as any} key={wallet}>
+              {(props) => <CustomWalletButton {...props} />}
+            </RainbowWalletButton.Custom>
+          ))}
 
-          <WalletButton
+          {/* <WalletButton
             disabled={connecting}
             key={solanaWallet?.adapter.name}
             iconUrl={solanaWallet?.adapter.icon ?? ""}
@@ -160,6 +164,7 @@ const Onboarding = () => {
 
                 if (solanaWallet.adapter.connected) {
                   console.log("Already connected to Phantom");
+                  await disconnectSolana();
                   return;
                 }
 
@@ -185,21 +190,7 @@ const Onboarding = () => {
                 }
               }
             }}
-          />
-
-          {isConnected && (
-            <>
-              <ConnectedChains />
-              <Button
-                variant="secondary"
-                className="w-full h-[52px] mt-4"
-                onClick={handleDisconnect}
-                disabled={isDisconnecting}
-              >
-                {isDisconnecting ? "Disconnecting..." : "Disconnect Wallet"}
-              </Button>
-            </>
-          )}
+          /> */}
         </div>
       </div>
 

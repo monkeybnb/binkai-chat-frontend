@@ -1,6 +1,6 @@
 "use client";
 import SocialLink from "@/components/common/SocialLink";
-import { Edit, Menu, Search } from "@/components/icons";
+import { Edit, Menu } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useViewWidth } from "@/hooks/useViewWidthHeight";
 import { cn } from "@/lib/utils";
@@ -47,9 +47,9 @@ const ChatSidebar = ({ isSidebarOpen, setIsSidebarOpen }: ChatSiderProps) => {
           </Button>
 
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" className="w-11 h-11">
+            {/* <Button variant="ghost" size="icon" className="w-11 h-11">
               <Search />
-            </Button>
+            </Button> */}
 
             <Button
               variant="ghost"
