@@ -2,6 +2,7 @@
 
 import { GridBackground, LogoText } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useWalletAutoConnect } from "@/hooks/useWalletAutoConnect";
 import { WalletButton as RainbowWalletButton } from "@rainbow-me/rainbowkit";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId, useChains, useDisconnect } from "wagmi";
@@ -93,6 +94,7 @@ const ConnectedChains = () => {
 
 const Onboarding = () => {
   const { isConnected } = useAccount();
+  useWalletAutoConnect();
   const { disconnect } = useDisconnect();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
@@ -109,16 +111,10 @@ const Onboarding = () => {
     }
   };
 
-  // useEffect(() => {
-  //   if (isConnected) {
-  //     handleDisconnect();
-  //   }
-  // }, [isConnected]);
-
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col items-center justify-center relative bg-background">
-      <div className="absolute top-0 left-0 w-screen overflow-hidden">
-        <GridBackground className="h-[171px] w-full md:h-full" />
+      <div className="absolute top-0 left-0 w-screen overflow-hidden 2xl:scale-150">
+        <GridBackground className="h-[160px] w-full md:h-full" />
       </div>
       <div className="flex flex-col items-center gap-4 px-4 w-full max-w-[720px] relative z-10">
         <LogoText className="text-2xl" />
@@ -157,8 +153,8 @@ const Onboarding = () => {
           © 2025 BINK AI
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 rotate-180 w-screen overflow-hidden">
-        <GridBackground className="h-[171px] w-full md:h-full" />
+      <div className="absolute bottom-0 left-0 rotate-180 w-screen overflow-hidden 2xl:scale-150">
+        <GridBackground className="h-[160px] w-full md:h-full" />
       </div>
     </div>
   );

@@ -9,9 +9,7 @@ import {
 import "@rainbow-me/rainbowkit/styles.css";
 import {
   binanceWallet,
-  injectedWallet,
   metaMaskWallet,
-  phantomWallet,
   safepalWallet,
   trustWallet,
 } from "@rainbow-me/rainbowkit/wallets";
@@ -47,14 +45,7 @@ const customTheme = lightTheme({
 const recommendedWalletList: WalletList = [
   {
     groupName: "Recommended",
-    wallets: [
-      metaMaskWallet,
-      binanceWallet,
-      trustWallet,
-      safepalWallet,
-      injectedWallet,
-      phantomWallet,
-    ],
+    wallets: [metaMaskWallet, binanceWallet, trustWallet, safepalWallet],
   },
 ];
 
@@ -111,7 +102,7 @@ export default function QueryClientProviderWrapper({
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectionProvider endpoint={rpc}>
-          <SolanaWalletProvider wallets={wallets}>
+          <SolanaWalletProvider wallets={wallets} autoConnect={false}>
             <WalletModalProvider>
               <RainbowKitProvider modalSize="compact" theme={customTheme}>
                 {children}
