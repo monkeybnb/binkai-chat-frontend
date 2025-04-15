@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 
 interface WalletButtonProps {
-  disabled: boolean;
+  disabled?: boolean;
   iconUrl: string;
   connector: any;
   handleConnect: () => void;
@@ -9,7 +9,7 @@ interface WalletButtonProps {
 }
 
 const WalletButton = ({
-  disabled,
+  disabled = false,
   iconUrl,
   connector,
   handleConnect,

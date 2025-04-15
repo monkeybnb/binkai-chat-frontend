@@ -10,9 +10,15 @@ interface AuthState {
   isLoading: boolean;
   profile: any | undefined;
   setProfile: (profile: any) => void;
-  login: (params: { address: string; signMessageAsync: any }) => Promise<void>;
+  login: (params: {
+    address: string;
+    signMessageAsync: any;
+    loginMethod: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
+  loginMethod: string;
+  setLoginMethod: (method: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -22,7 +28,8 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       userInfo: undefined,
       profile: undefined,
-
+      loginMethod: "",
+      setLoginMethod: (method: string) => set({ loginMethod: method }),
       setProfile: (profile) => set({ profile }),
 
       fetchProfile: async () => {
@@ -38,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async ({ address, signMessageAsync }) => {
+      login: async ({ address, signMessageAsync, loginMethod }) => {
         const accessToken = localStorage.getItem("access_token");
 
         if (accessToken) {
@@ -61,7 +68,15 @@ export const useAuthStore = create<AuthState>()(
 
           const message = `Sign this message to login with nonce: ${data.nonce}`;
 
-          const signature = await signMessageAsync({ message });
+          let signature: string;
+
+          if (loginMethod === "solana") {
+            const signMsg = new TextEncoder().encode(message);
+            const sg = await signMessageAsync(signMsg);
+            signature = Buffer.from(sg).toString("base64");
+          } else {
+            signature = await signMessageAsync({ message });
+          }
 
           console.log("Sign success!", signature);
           const loginData = { address, signature };

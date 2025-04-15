@@ -1,15 +1,25 @@
 "use client";
 
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: any;
+    };
+  }
+}
+
 import { GridBackground, LogoText } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useWalletAutoConnect } from "@/hooks/useWalletAutoConnect";
+import { useAuthStore } from "@/stores/auth-store";
 import { WalletButton as RainbowWalletButton } from "@rainbow-me/rainbowkit";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useChainId, useChains, useDisconnect } from "wagmi";
 import SocialLink from "./SocialLink";
 import WalletButton from "./WalletButton";
 
-export const WALLETS = ["binance", "metamask", "trust", "safepal"];
+export const WALLETS = ["binance", "metamask", "trust"];
 
 interface CustomWalletButtonProps {
   ready: boolean;
@@ -27,6 +37,7 @@ export const CustomWalletButton = ({
 }: CustomWalletButtonProps) => {
   const [iconUrl, setIconUrl] = useState<string>();
   const [isConnecting, setIsConnecting] = useState(false);
+  const { setLoginMethod } = useAuthStore();
 
   useEffect(() => {
     const loadIcon = async () => {
@@ -46,6 +57,7 @@ export const CustomWalletButton = ({
     try {
       setIsConnecting(true);
       await connect();
+      setLoginMethod("evm");
     } catch (error) {
       console.error("Failed to connect:", error);
     } finally {
@@ -97,7 +109,11 @@ const Onboarding = () => {
   useWalletAutoConnect();
   const { disconnect } = useDisconnect();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
-
+  const { setLoginMethod } = useAuthStore();
+  const { wallets, select, connecting } = useWallet();
+  const solanaWallet = wallets.find(
+    (wallet) => wallet.adapter.name === "Phantom"
+  );
   const handleDisconnect = async () => {
     if (isDisconnecting) return;
 
@@ -130,6 +146,46 @@ const Onboarding = () => {
                 {(props) => <CustomWalletButton {...props} />}
               </RainbowWalletButton.Custom>
             ))}
+
+          <WalletButton
+            disabled={connecting}
+            key={solanaWallet?.adapter.name}
+            iconUrl={solanaWallet?.adapter.icon ?? ""}
+            connector={solanaWallet?.adapter}
+            handleConnect={async () => {
+              try {
+                if (!solanaWallet?.adapter) {
+                  throw new Error("Phantom wallet adapter not found");
+                }
+
+                if (solanaWallet.adapter.connected) {
+                  console.log("Already connected to Phantom");
+                  return;
+                }
+
+                if (solanaWallet.adapter.connecting) {
+                  console.log("Connection in progress...");
+                  return;
+                }
+
+                setLoginMethod("solana");
+                select(solanaWallet.adapter.name);
+
+                await solanaWallet.adapter.connect();
+                console.log("Successfully connected to Phantom wallet");
+              } catch (error: any) {
+                console.error(
+                  "Failed to connect wallet:",
+                  error?.message || error
+                );
+                if (error?.message?.toLowerCase().includes("user rejected")) {
+                  console.log("User rejected the connection request");
+                } else if (!window.phantom?.solana) {
+                  window.open("https://phantom.app/", "_blank");
+                }
+              }
+            }}
+          />
 
           {isConnected && (
             <>
