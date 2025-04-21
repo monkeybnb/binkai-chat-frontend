@@ -55,7 +55,7 @@ export const MessageMarkdown = ({ content }: MessageMarkdownProps) => {
             if (shouldHighlight) {
               return (
                 <div className="relative inline-flex group">
-                  <code className="rounded-xl px-2 py-1 bg-muted text-[rgb(64,160,112)]">
+                  <code className="rounded-xl px-2 py-1 bg-muted text-[rgb(64,160,112)] overflow-x-auto whitespace-pre max-w-full block custom-scrollbar">
                     {code}
                   </code>
                   <div className="absolute -right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
