@@ -9,7 +9,7 @@ import {
 export const useScroll = ({ status }: { status: string }) => {
   const messagesStartRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isAtTop, setIsAtTop] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);

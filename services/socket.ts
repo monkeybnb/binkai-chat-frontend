@@ -278,10 +278,7 @@ class SocketService {
 
     this.socket.on(
       "sign_transaction",
-      async (
-        data: SignTransactionData,
-        callback: (response: WalletResponse) => void
-      ) => {
+      async (data: any, callback: (response: any) => void) => {
         try {
           if (!this.walletConfig) {
             throw new Error("Wallet not connected");
@@ -308,7 +305,19 @@ class SocketService {
 
             callback({ signedTransaction });
           } else {
-            callback({ error: "Not supported" });
+            if (!this.checkNetworkAvailability(data.network)) {
+              return callback({ error: "Network not available" });
+            }
+            const tx = parseTransaction(data.transaction as `0x${string}`);
+            const signedTx = await this.walletConfig.evm?.sendTransaction({
+              to: tx.to as `0x${string}`,
+              value: tx.value as bigint,
+              data: tx.data as `0x${string}`,
+              gas: tx.gas as bigint,
+            });
+
+            console.log("signedTx", signedTx);
+            callback({ tx_hash: signedTx });
           }
         } catch (error) {
           console.error("Error signing transaction:", error);
