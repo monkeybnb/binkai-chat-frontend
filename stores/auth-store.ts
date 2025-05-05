@@ -14,7 +14,6 @@ interface AuthState {
   login: (params: {
     address: string;
     signMessageAsync: any;
-    loginMethod: string;
     disconnect: any;
   }) => Promise<void>;
   logout: () => Promise<void>;
@@ -47,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async ({ address, signMessageAsync, loginMethod, disconnect }) => {
+      login: async ({ address, signMessageAsync, disconnect }) => {
         const accessToken = localStorage.getItem("access_token");
 
         if (accessToken) {
@@ -72,13 +71,13 @@ export const useAuthStore = create<AuthState>()(
 
           let signature: string;
 
-          if (loginMethod === "solana") {
-            const signMsg = new TextEncoder().encode(message);
-            const sg = await signMessageAsync(signMsg);
-            signature = Buffer.from(sg).toString("base64");
-          } else {
-            signature = await signMessageAsync({ message });
-          }
+          // if (loginMethod === "solana") {
+          //   const signMsg = new TextEncoder().encode(message);
+          //   const sg = await signMessageAsync(signMsg);
+          //   signature = Buffer.from(sg).toString("base64");
+          // } else {
+          signature = await signMessageAsync({ message });
+          // }
 
           console.log("Sign success!", signature);
           const loginData = { address, signature };

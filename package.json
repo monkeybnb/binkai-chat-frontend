@@ -49,6 +49,7 @@
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
     "@types/socket.io-client": "^3.0.0",
+    "@wagmi/core": "2.9.2",
     "autoprefixer": "10.4.15",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.0",
@@ -91,8 +92,8 @@
     "typescript": "5.2.2",
     "uuid": "^11.1.0",
     "vaul": "^0.9.9",
-    "viem": "~2.24.3",
-    "wagmi": "^2.14.16",
+    "viem": "2.5.0",
+    "wagmi": "2.9.2",
     "zod": "^3.23.8",
     "zustand": "^5.0.3"
   },

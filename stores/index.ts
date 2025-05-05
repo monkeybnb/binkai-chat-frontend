@@ -38,6 +38,7 @@ export interface Thread {
   updated_at: string;
   user_id: string;
   messages: Message[];
+  error?: string;
 }
 
 interface ChatState {
@@ -99,6 +100,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   messageHasMore: {},
   messageCurrentPage: {},
   pendingMessage: null,
+  fetchMessageError: {},
 
   setLoading: (loading) => set({ isLoading: loading }),
   setSending: (threadId: string, sending: boolean) =>
@@ -150,11 +152,25 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           isLoadingMore: { ...state.isLoadingMore, [threadId]: true },
         }));
       }
-      const response = await getThreadMessages({
+      const response: any = await getThreadMessages({
         id: threadId,
         page,
         take: 20,
       });
+
+      if (response.error && page === 1) {
+        set((state) => ({
+          threads: state.threads.map((t) =>
+            t.id === threadId
+              ? {
+                  ...t,
+                  messages: [],
+                  error: response.error,
+                }
+              : t
+          ),
+        }));
+      }
 
       const messages = response?.data || [];
       const hasMore = messages.length === 20;
@@ -605,6 +621,7 @@ export const useThreadMessages = (threadId: string) => {
 
   return {
     messages: thread?.messages || [],
+    error: thread?.error || null,
     isLoading,
     isLoadingMore: isLoadingMore[threadId] || false,
     hasMore: messageHasMore[threadId] || false,

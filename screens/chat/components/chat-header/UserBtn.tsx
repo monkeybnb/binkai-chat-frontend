@@ -1,10 +1,17 @@
 "use client";
+import { AlignArrowLeft } from "@/components/icons";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Image from "next/image";
 import { useAccount } from "wagmi";
 import { evmNetworks, solanaNetworks } from "../right-sider";
 
-const NetworkList = () => {
+const NetworkList = ({
+  onClick,
+  isOpenRightSider,
+}: {
+  onClick: () => void;
+  isOpenRightSider: boolean;
+}) => {
   const { connected: solanaConnected } = useWallet();
   const { isConnected: evmConnected } = useAccount();
   const evm = evmConnected ? evmNetworks : [];
@@ -12,6 +19,14 @@ const NetworkList = () => {
   const networks = [...evm, ...solana];
   const displayedNetworks = networks.slice(0, 3);
   const remainingCount = networks.length - displayedNetworks.length;
+
+  if (!networks.length && !isOpenRightSider) {
+    return (
+      <div className="flex items-center cursor-pointer" onClick={onClick}>
+        <AlignArrowLeft />
+      </div>
+    );
+  }
 
   return (
     <div className="flex -space-x-3 items-center px-1.5 py-1">
@@ -41,10 +56,16 @@ const NetworkList = () => {
   );
 };
 
-const UserBtn = ({ onClick }: { onClick: () => void }) => {
+const UserBtn = ({
+  onClick,
+  isOpenRightSider,
+}: {
+  onClick: () => void;
+  isOpenRightSider: boolean;
+}) => {
   return (
     <div className="flex items-center cursor-pointer" onClick={onClick}>
-      <NetworkList />
+      <NetworkList onClick={onClick} isOpenRightSider={isOpenRightSider} />
     </div>
   );
 };

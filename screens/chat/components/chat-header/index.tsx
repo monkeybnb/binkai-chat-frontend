@@ -53,7 +53,10 @@ export function ChatHeader({
       </div>
 
       <div className="flex items-center gap-4">
-        <UserBtn onClick={() => setIsOpenRightSider(!isOpenRightSider)} />
+        <UserBtn
+          onClick={() => setIsOpenRightSider(!isOpenRightSider)}
+          isOpenRightSider={isOpenRightSider}
+        />
       </div>
     </header>
   );
