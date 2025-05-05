@@ -143,11 +143,14 @@ export const useNetworkConnect = () => {
   };
 
   const handleDisconnectAll = async () => {
-    router.push("/");
     await disconnectAsync();
     await disconnect();
     await disconnectSolana();
     logout();
+
+    console.log("disconnectAll");
+
+    router.push("/");
   };
 
   return {

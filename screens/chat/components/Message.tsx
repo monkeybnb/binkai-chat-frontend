@@ -38,7 +38,7 @@ export const Message = ({ msg }: MessageProps) => {
   return (
     <div className="flex flex-col gap-2 relative pb-9">
       <div className="flex gap-2">
-        <div className="self-start w-full relative">
+        <div className="self-start w-full relative break-words">
           <MessageMarkdown content={msg.content} />
           {msg.error && <div className="text-red-500 text-sm">{msg.error}</div>}
         </div>

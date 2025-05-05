@@ -9,8 +9,7 @@ const errorCallback = (status: number, dataError: any) => {
 };
 
 const handlePushToLogin = async () => {
-  localStorage.removeItem("access_token");
-  // window.location.href = "/";
+  window.location.href = "/logout";
 };
 
 class ApiClient {
@@ -63,7 +62,7 @@ class ApiClient {
 
         switch (resError?.status) {
           case 401:
-            // handlePushToLogin();
+            handlePushToLogin();
             return errorCallback(401, dataError);
           default:
             return errorCallback(400, dataError);

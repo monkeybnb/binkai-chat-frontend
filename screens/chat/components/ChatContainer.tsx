@@ -11,6 +11,7 @@ import {
   useChatStore,
   useThreadMessages,
   useThreadRouter,
+  useThreads,
 } from "@/stores";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,6 +24,8 @@ import MessageInput from "./MessageInput";
 const ChatContainer = () => {
   const searchParams = useSearchParams();
   const threadId = searchParams.get("threadId") as string;
+  const { threads } = useThreads(threadId as string);
+
   const [message, setMessage] = useState("");
   const { address } = useAccount();
   const { isConnectedEvm, connectedSolana } = useNetworkConnect();
@@ -117,10 +120,6 @@ const ChatContainer = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!messages?.length && !isLoading) {
-      handleSendMessageFromHome(message);
-      return;
-    }
     const currentMessage = message;
     setMessage("");
     try {
@@ -141,12 +140,14 @@ const ChatContainer = () => {
       <div className="w-full flex flex-col overflow-hidden h-full relative">
         <ListMessages />
       </div>
-      <MessageInput
-        message={message}
-        setMessage={setMessage}
-        onSendMessage={handleSendMessage}
-        threadId={threadId}
-      />
+      {threads?.some((t) => t.id === threadId) && (
+        <MessageInput
+          message={message}
+          setMessage={setMessage}
+          onSendMessage={handleSendMessage}
+          threadId={threadId}
+        />
+      )}
     </div>
   );
 };
@@ -181,8 +182,9 @@ const HomeContent = ({
 const ListMessages = () => {
   const searchParams = useSearchParams();
   const threadId = searchParams.get("threadId") as string;
-  const { messages, isLoading, isLoadingMore, hasMore, fetchMore } =
+  const { messages, isLoading, isLoadingMore, hasMore, fetchMore, error } =
     useThreadMessages(threadId);
+  const { threads } = useThreads(threadId as string);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -216,7 +218,7 @@ const ListMessages = () => {
     );
   }
 
-  if (!messages?.length) {
+  if (!threads?.some((t) => t.id === threadId)) {
     return (
       <div className="flex-1 overflow-y-auto p-4 space-y-4 w-full max-w-[720px] mx-auto flex flex-col items-center justify-center">
         <div className="flex items-center justify-center text-muted-foreground">
