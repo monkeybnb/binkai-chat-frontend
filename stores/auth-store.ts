@@ -22,6 +22,8 @@ interface AuthState {
   setLoginMethod: (method: string) => void;
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -57,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           set({ isLoading: true });
-
+          await delay(2000);
           const { data } = await axios.get(
             `${process.env.NEXT_PUBLIC_API_URL}/auth/nonce?address=${address}`
           );
